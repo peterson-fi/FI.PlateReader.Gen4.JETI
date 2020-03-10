@@ -1,0 +1,19 @@
+SBus =8
+Current =1200
+Fullsteps_per_rev =200
+Encoder_counts_per_rev =4000
+Units_per_rev =40
+PositionErrorThresh =0.2
+Speed =100
+Acceleration =1000
+Microstep =16
+MotorReverse =true
+EncoderReverse =true
+End
+
+
+Conversion - (Pitch x teeth)/200
+Current - mA
+Speed - full step per second
+Acc - full step per second square
+microstepping - x8

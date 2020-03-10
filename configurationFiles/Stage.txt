@@ -1,0 +1,5 @@
+rowDirection =-1
+columnDirection =-1
+rowEject =230
+columnEject =52
+End

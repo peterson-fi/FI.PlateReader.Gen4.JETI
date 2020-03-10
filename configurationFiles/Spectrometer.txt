@@ -1,0 +1,15 @@
+Name =Freedom UV
+Pixel =2048
+WavelengthStart =300
+WavelengthEnd =420
+Spacing =10
+P0 =35.6005
+P1 =0.211684
+P2 =0.0000849592
+P3 =-0.0000000370257
+P4 =0.00000000000232069
+End
+
+
+
+

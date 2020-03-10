@@ -1,0 +1,5 @@
+Name =LED 280 nm
+SBus =3
+Channel =1
+MaxCurrent =200
+End
