@@ -596,7 +596,7 @@ namespace FI.PlateReader.Gen4.JETI
                             ReadDataLED();
                             ReadDataRowMotor();
                             ReadDataColumnMotor();
-                            ReadDataSpectrometer();
+                            //ReadDataSpectrometer();
 
                             // move user data to settings which are used in the initialize functions.
                             UserDataSettings();
@@ -1756,10 +1756,10 @@ namespace FI.PlateReader.Gen4.JETI
             bool chk3 = CheckError(Versa_getSBusInfo(info.ColumnBus, &pinfo));
             ColumnMotorData.pinfo = pinfo;
 
-            // Get the Handle
-            linescanHandle = Versa_getPBusHandle();
-            bool chk4 = CheckError(Versa_getPBusInfo(&pinfo));
-            linescanData.pinfo = pinfo;
+            //// Get the Handle
+            //linescanHandle = Versa_getPBusHandle();
+            //bool chk4 = CheckError(Versa_getPBusInfo(&pinfo));
+            //linescanData.pinfo = pinfo;
 
             return true;
         }
