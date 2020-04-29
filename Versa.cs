@@ -100,7 +100,7 @@ namespace FI.PlateReader.Gen4.JETI
             public int ledPulse;
             public int ledWavelength;
             public int ledMaxCurrent;
-            public int instrumentGain;
+            public float instrumentGain;
             public int Npixels;
             public float[] coef;
             public int correctStart;
@@ -155,6 +155,8 @@ namespace FI.PlateReader.Gen4.JETI
             public int[] wavelength;
             public int[] limit;
             public float[] hours;
+
+            public bool[] on;
         };
 
         public struct Versa_PeripheralInfo_t
@@ -255,7 +257,7 @@ namespace FI.PlateReader.Gen4.JETI
         public static extern int Versa_RS485_writeData(int channel, byte* data, int size);
 
         [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int Versa_RS485_readData(int channel, char* data, int size, int timeout_ms);
+        public static extern int Versa_RS485_readData(int channel, byte* data, int size, int timeout_ms);
 
         [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern int Versa_RS485_getReadBufferSize(int channel, int* size);
@@ -529,6 +531,12 @@ namespace FI.PlateReader.Gen4.JETI
             rowBus = info.RowBus;
             columnBus = info.ColumnBus;
 
+            ledData.on = new bool[4];
+            ledData.on[0] = false;
+            ledData.on[1] = false;
+            ledData.on[2] = false;
+            ledData.on[3] = false;
+
             //// Set row scan = true for Versa row scanning
             //RowScan = true;
             //// Set LEDcontrol = true for Versa row scanning LED pulse control
@@ -752,6 +760,30 @@ namespace FI.PlateReader.Gen4.JETI
             userData.columnDirection = info.ColumnDirection;
             userData.rowDirection = info.RowDirection;
 
+            userData.ledPulse = info.LEDPulse;
+            userData.ledWavelength = info.LEDWL1;
+            userData.ledMaxCurrent = info.LEDlimit1;
+
+            userData.instrumentGain = (float)info.InstrumentGain;
+            userData.Npixels = info.Pixel;
+            userData.coef[0] = (float)info.P0;
+            userData.coef[1] = (float)info.P1;
+            userData.coef[2] = (float)info.P2;
+            userData.coef[3] = (float)info.P3;
+            userData.coef[4] = (float)info.P4;
+
+            Wavelength = info.Wavelength;
+
+            userData.correctStart = info.CorrectStart;
+            userData.correctLength = info.CorrectLength;
+            for (int i = 0; i < info.CorrectLength; i++)
+            {
+                userData.correctValues[i] = (float)info.CorrectValues[i];
+            }
+            
+
+
+
             ledData.hours = new float[4];
             ledData.limit[0] = info.LEDlimit1;
             ledData.limit[1] = info.LEDlimit2;
@@ -922,54 +954,54 @@ namespace FI.PlateReader.Gen4.JETI
 
 
             byte[] roffset = BitConverter.GetBytes(userData.rowOffset);
-            roffset.CopyTo(uData, 30);
+            roffset.CopyTo(uData, 22);
 
             byte[] coffset = BitConverter.GetBytes(userData.columnOffset);
-            coffset.CopyTo(uData, 34);
+            coffset.CopyTo(uData, 26);
 
             byte[] reject = BitConverter.GetBytes(userData.rowEject);
-            reject.CopyTo(uData, 38);
+            reject.CopyTo(uData, 30);
 
             byte[] ceject = BitConverter.GetBytes(userData.columnEject);
-            ceject.CopyTo(uData, 42);
+            ceject.CopyTo(uData, 34);
 
             byte[] rdir = BitConverter.GetBytes(userData.rowDirection);
-            rdir.CopyTo(uData, 46);
+            rdir.CopyTo(uData, 38);
 
             byte[] cdir = BitConverter.GetBytes(userData.columnDirection);
-            cdir.CopyTo(uData, 50);
+            cdir.CopyTo(uData, 42);
 
             byte[] ledPulse = BitConverter.GetBytes(userData.ledPulse);
-            ledPulse.CopyTo(uData, 54);
+            ledPulse.CopyTo(uData, 46);
 
             byte[] ledWL = BitConverter.GetBytes(userData.ledWavelength);
-            ledWL.CopyTo(uData, 58);
+            ledWL.CopyTo(uData, 50);
 
             byte[] ledMax = BitConverter.GetBytes(userData.ledMaxCurrent);
-            ledMax.CopyTo(uData, 62);
+            ledMax.CopyTo(uData, 54);
 
             byte[] instGain = BitConverter.GetBytes(userData.instrumentGain);
-            instGain.CopyTo(uData, 66);
+            instGain.CopyTo(uData, 58);
 
             byte[] pixels = BitConverter.GetBytes(userData.Npixels);
-            pixels.CopyTo(uData, 70);
+            pixels.CopyTo(uData, 62);
 
             for (int n = 0; n < 5; n++)
             {
                 byte[] bytes = BitConverter.GetBytes(userData.coef[n]);
-                bytes.CopyTo(uData, (n * 4 + 74));
+                bytes.CopyTo(uData, (n * 4 + 66));
             }
 
             byte[] cStart = BitConverter.GetBytes(userData.correctStart);
-            cStart.CopyTo(uData, 94);
+            cStart.CopyTo(uData, 86);
 
             byte[] cLength = BitConverter.GetBytes(userData.correctLength);
-            cLength.CopyTo(uData, 98);
+            cLength.CopyTo(uData, 90);
 
             for (int n = 0; n < userData.correctLength; n++)
             {
                 byte[] cValue = BitConverter.GetBytes(userData.correctValues[n]);
-                cValue.CopyTo(uData, 102+(4*n));
+                cValue.CopyTo(uData, 94+(4*n));
             }
 
             userData.data = uData;
@@ -1208,7 +1240,7 @@ namespace FI.PlateReader.Gen4.JETI
             if (spec_sn < 0) { VersaValid = false; }
             else { userData.specSerial = spec_sn; }
 
-            float rowOffset = BitConverter.ToSingle(dData, 30);
+            float rowOffset = BitConverter.ToSingle(dData, 22);
             // check if offset is a valid number
             if (rowOffset == float.NaN) { VersaValid = false; }
             else
@@ -1224,7 +1256,7 @@ namespace FI.PlateReader.Gen4.JETI
                 }                
             }
 
-            float colOffset = BitConverter.ToSingle(dData, 34);
+            float colOffset = BitConverter.ToSingle(dData, 26);
             // check if offset is a valid number
             if (colOffset == float.NaN) { VersaValid = false; }
             else
@@ -1240,7 +1272,7 @@ namespace FI.PlateReader.Gen4.JETI
                 }
             }
 
-            float rowEject = BitConverter.ToSingle(dData, 38);
+            float rowEject = BitConverter.ToSingle(dData, 30);
             // check if offset is a valid number
             if (rowEject == float.NaN) { VersaValid = false; }
             else
@@ -1256,7 +1288,7 @@ namespace FI.PlateReader.Gen4.JETI
                 }
             }
 
-            float colEject = BitConverter.ToSingle(dData, 42);
+            float colEject = BitConverter.ToSingle(dData, 34);
             // check if offset is a valid number
             if (colEject == float.NaN) { VersaValid = false; }
             else
@@ -1272,43 +1304,45 @@ namespace FI.PlateReader.Gen4.JETI
                 }
             }
 
-            int rowDir = BitConverter.ToInt32(dData, 46);
+            int rowDir = BitConverter.ToInt32(dData, 38);
             if ((rowDir == -1) || (rowDir == 1)) { userData.rowDirection = rowDir; }
             else
             {
                 VersaValid = false;
             }
 
-            int colDir = BitConverter.ToInt32(dData, 50);
+            int colDir = BitConverter.ToInt32(dData, 42);
             if ((colDir == -1) || (colDir == 1)) { userData.columnDirection = colDir; }
             else
             {
                 VersaValid = false;
             }
 
-            int ledPulse = BitConverter.ToInt32(dData, 54);
+            int ledPulse = BitConverter.ToInt32(dData, 46);
             if ((ledPulse == 0) || (ledPulse == 1)) { userData.ledPulse = ledPulse; }
             else
             {
                 VersaValid = false;
             }
 
-            int ledWL = BitConverter.ToInt32(dData, 58);
-            if ((ledWL == 0) || (ledWL == 1)) { userData.ledWavelength = ledWL; }
+            int ledWL = BitConverter.ToInt32(dData, 50);
+            if ((ledWL > 0) && (ledWL < 700)) { userData.ledWavelength = ledWL; }
             else
             {
                 VersaValid = false;
             }
 
-            int ledMax = BitConverter.ToInt32(dData, 62);
-            if ((ledMax == 0) || (ledMax == 1)) { userData.ledMaxCurrent = ledMax; }
+            int ledMax = BitConverter.ToInt32(dData, 54);
+            if ((ledMax < 500)) { userData.ledMaxCurrent = ledMax; }
             else
             {
                 VersaValid = false;
             }
 
+            float instrGain = BitConverter.ToSingle(dData, 58);
+            if (instrGain == float.NaN) { VersaValid = false; }
 
-            int pixel_d = BitConverter.ToInt32(dData,70);
+            int pixel_d = BitConverter.ToInt32(dData,62);
             if ((pixel_d == 256) || (pixel_d == 1024) || (pixel_d == 2048))
             {
                 userData.Npixels = pixel_d;
@@ -1323,7 +1357,7 @@ namespace FI.PlateReader.Gen4.JETI
             float[] coef_d = new float[degree_d];
             for (int n = 0; n < degree_d; n++)
             {
-                coef_d[n] = BitConverter.ToSingle(dData, (n * 4 + 74));
+                coef_d[n] = BitConverter.ToSingle(dData, (n * 4 + 66));
                 if (coef_d[n] == float.NaN) { VersaValid = false; }
             }
             // check wavelength values.
@@ -1354,10 +1388,10 @@ namespace FI.PlateReader.Gen4.JETI
                 }
             }
 
-            int correctStart = BitConverter.ToInt32(dData, 94);
+            int correctStart = BitConverter.ToInt32(dData, 86);
             if (correctStart < (pixel_d - 400))
             {
-                userData.correctStart = pixel_d;
+                userData.correctStart = correctStart;
             }
             else
             {
@@ -1365,22 +1399,22 @@ namespace FI.PlateReader.Gen4.JETI
                 VersaValid = false;
             }
 
-            int correctLength = BitConverter.ToInt32(dData, 98);
+            int correctLength = BitConverter.ToInt32(dData, 90);
             if (correctLength <= pixel_d)
             {
                 userData.correctLength = correctLength;
             }
             else
             {
-                userData.correctLength = 400;
+                userData.correctLength = 412;
                 VersaValid = false;
             }
 
-            float[] correctValues = new float[correctLength];
+            userData.correctValues = new float[userData.correctLength];
 
-            for (int i=0; i < correctLength; i++)
+            for (int i=0; i < userData.correctLength; i++)
             {
-                float cValue = BitConverter.ToSingle(dData, 102+(4*i));
+                float cValue = BitConverter.ToSingle(dData, 94+(4*i));
                 if ((cValue > 0) & (cValue < 5))
                 {
                     userData.correctValues[i] = cValue;
@@ -1420,6 +1454,7 @@ namespace FI.PlateReader.Gen4.JETI
             ledData.wavelength = new int[4];
             ledData.limit = new int[4];
             ledData.hours = new float[4];
+            
 
             // convert bytes to values.
             for (int c = 0; c < 4; c++)
@@ -1828,7 +1863,8 @@ namespace FI.PlateReader.Gen4.JETI
             if (!LEDConnect) { return false; }
 
             // Convert Power to Current
-            int conversion = 2;
+            int conversion = userData.ledMaxCurrent / 100;
+            conversion = 5;
             int current = conversion * Power;
 
             // Set the Current

@@ -105,6 +105,7 @@ namespace FI.PlateReader.Gen4.JETI
                 //data.info = settings.info;
                 //microplate.info = settings.info;
                 //instrument.info = settings.info;
+				settings.info.Wavelength = jeti.wavelength;
                 info = settings.info;
                 jeti.info = info;
                 jeti.vs = versa;
