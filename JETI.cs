@@ -13,13 +13,12 @@ namespace FI.PlateReader.Gen4.JETI
     {
         // Classes
         public Settings.Info info;
-        public Versa vs;
         private int jetiHandle;
         public string apiVersion;
         public int Npixels;
-        public double[] wavelength;
-        public double[] dark;
-        public double[] data;
+        public double[] Wavelength;
+        public double[] Background { get; set; }    // Background Spectrum [Pre Scan, Dark]
+        public double[] Waveform { get; set; }      // Waveform Spectrum [Well, Light]  
         public int Tint;
 
         [DllImport("jeti_core.dll")]
@@ -99,12 +98,12 @@ namespace FI.PlateReader.Gen4.JETI
                     pixelCount(ref nPixel);
                     Npixels = (int)nPixel;
 
-                    dark = new double[Npixels];
-                    data = new double[Npixels];
-                    wavelength = new double[Npixels];
+                    Background = new double[Npixels];
+                    Waveform = new double[Npixels];
+                    Wavelength = new double[Npixels];
 
                     // get wavelength conversion values
-                    pixelFit(ref wavelength);
+                    pixelFit(ref Wavelength);
 
                     return true;
                 }
@@ -116,21 +115,29 @@ namespace FI.PlateReader.Gen4.JETI
             }
         }
 
+        public bool Disconnect()
+        {
+            int test = closeDevice();
+            if (test == 0) { return true; }
+            else { return false; }
+            
+        }
+
         public bool DarkMeasurement()
         {
             // Turn Led Off
-            if (info.LEDControl) { vs.LedOff(); }
+            //if (info.LEDControl) { vs.LedOff(); }
 
             // initialize array
             double[] spec = new double[Npixels];
-            dark = new double[Npixels];
+            Background = new double[Npixels];
             // Perform Measurement
             getSpectrum(Tint, ref spec);
 
             // Subtract dark measurement.
             for (int i = 0; i < Npixels; i++)
             {
-                dark[i] = spec[i];
+                Background[i] = spec[i];
             }
 
             return true;
@@ -141,22 +148,22 @@ namespace FI.PlateReader.Gen4.JETI
         {
 
             // Turn Led On
-            if (info.LEDControl) { vs.LedOn(); }
+            //if (info.LEDControl) { vs.LedOn(); }
 
             // initialize array
             double[] spec = new double[Npixels];
-            data = new double[Npixels];
+            Waveform = new double[Npixels];
 
             // Perform Measurement
             getSpectrum(Tint, ref spec);
 
             // Turn Led Off
-            if (info.LEDControl) { vs.LedOff(); }
+            //if (info.LEDControl) { vs.LedOff(); }
 
             // Subtract dark measurement.
             for (int i = 0; i < Npixels; i++)
             {
-                data[i] = spec[i] - dark[i];
+                Waveform[i] = spec[i] - Background[i];
             }
 
             return true;

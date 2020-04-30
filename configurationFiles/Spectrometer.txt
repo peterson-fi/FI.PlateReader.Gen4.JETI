@@ -1,4 +1,29 @@
-Name =Freedom UV
+Name =Pebble
+Pixel =256
+WavelengthStart =400
+WavelengthEnd =700
+Spacing =20
+P0 =904.026
+P1 =-1.43704
+P2 =-0.00467933
+P3 =0.0000123059
+P4 =-0.0000000342377
+End
+
+
+
+Name =Freedom VIS
+Pixel =2048
+WavelengthStart =400
+WavelengthEnd =700
+Spacing =20
+P0 =63.6981
+P1 =0.501954
+P2 =0.00000660738
+P3 =0.0000000345108
+P4 =-0.0000000000220536
+
+
 Pixel =2048
 WavelengthStart =300
 WavelengthEnd =420
@@ -8,8 +33,3 @@ P1 =0.211684
 P2 =0.0000849592
 P3 =-0.0000000370257
 P4 =0.00000000000232069
-End
-
-
-
-

@@ -1,4 +1,4 @@
-RowOffset =97.01
-ColumnOffset =128.17
+RowOffset =95.5
+ColumnOffset =128.5
 End
 

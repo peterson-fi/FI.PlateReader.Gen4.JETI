@@ -29,6 +29,7 @@ namespace FI.PlateReader.Gen4.JETI
 
         // Current chart selected
         public ChartParameters chartParameters { get; set; }
+        public ChartParameters plotParameters { get; set; }
 
         // List of Chart Parameters used for plotting the different microplate
         public List<ChartParameters> ChartList;
@@ -163,15 +164,47 @@ namespace FI.PlateReader.Gen4.JETI
 
             });
 
+            // Well Image Plate
+            ChartList.Add(new ChartParameters
+            {
+                name = "Well Image",
+                row = 40,
+                column = 40,
+                wells = 1600,
+                wsMarkerSize = 9,
+                dataMarkerSize = 12,
+                markerMarkerSize = 5,
+                xFontSize = 6,
+                yFontSize = 6,
+                rowIntervalStart = 0,
+                rowIncrement1 = 2,
+                rowIncrement2 = 2,
+                columnIntervalStart = -0.5,
+                columnIncrement1 = 3,
+                columnIncrement2 = 2,
+                wsMarkerStyle = MarkerStyle.Circle,
+                dataMarkerStyle = MarkerStyle.Square,
+                wsNullColor = Color.Black,
+                wsActiveColor = Color.Red,
+                dataNullColor = Color.White,
+                dataActiveColor = Color.Red,
+                rowLabels = new string[20] { "1", "3", "5", "7", "9", "11", "13", "15", "17", "19", "21", "23", "25", "27", "29", "31", "33", "35", "37", "39" },
+                columnLabels = new string[20] { "1", "3", "5", "7", "9", "11", "13", "15", "17", "19", "21", "23", "25", "27", "29", "31", "33", "35", "37", "39"}
+
+            });
+
+
         }
 
-        public void SetCurrentChart(int value)
+        public void SetCurrentChart(int value, int value2)
         {
             // Initialize new current Chart Settings class
             chartParameters = new ChartParameters();
+            plotParameters = new ChartParameters();
 
             // Set the class
             chartParameters = ChartList[value];
+            plotParameters = ChartList[value2];
 
         }
 
@@ -226,7 +259,7 @@ namespace FI.PlateReader.Gen4.JETI
         public void FindHeatMapColors(int value, double[] data)
         {
             // Number of wells
-            int Wells = chartParameters.wells;
+            int Wells = plotParameters.wells;
 
             // Find Max
             double Max = data.Max();
@@ -303,44 +336,30 @@ namespace FI.PlateReader.Gen4.JETI
         // Find Max for waveform chart (Y axis scale)
         public double FindMax(double max)
         {
-
-            if (max < 5000)
+            if (max < 1000)
             {
-                return 5000;
+                for (int i = 0; i < 100; i++)
+                {
+                    int value = 10 * (i + 1);
+
+                    if (max < value)
+                    {
+                        return value;
+                    }
+                }
             }
+            else
+            {
+                for (int i = 0; i < 65; i++)
+                {
+                    int value = 1000 * (i + 1);
 
-            if (max < 10000)
-                return 10000;
-
-            if (max < 15000)
-                return 15000;
-
-            if (max < 20000)
-                return 20000;
-
-            if (max < 25000)
-                return 25000;
-
-            if (max < 30000)
-                return 30000;
-
-            if (max < 35000)
-                return 35000;
-
-            if (max < 40000)
-                return 40000;
-
-            if (max < 45000)
-                return 45000;
-
-            if (max < 50000)
-                return 50000;
-
-            if (max < 55000)
-                return 55000;
-
-            if (max < 60000)
-                return 60000;
+                    if (max < value)
+                    {
+                        return value;
+                    }
+                }
+            }
 
             return 65000;
 

@@ -9,7 +9,7 @@ namespace FI.PlateReader.Gen4.JETI
     class Microplate
     {
         // External Information
-        //public Settings.Info info;
+        public Settings.Info info;
 
         // The current microplate selected
         public Plate plate { get; set; }
@@ -54,7 +54,7 @@ namespace FI.PlateReader.Gen4.JETI
 
 
         // Methods
-        public void CreatePlates(int rDir, int cDir, double RowOffset, double ColumnOffset)
+        public void CreatePlates()
         {
             // Create new list of plates
             PlateList = new List<Plate>();
@@ -103,12 +103,12 @@ namespace FI.PlateReader.Gen4.JETI
 
 
             // Create the motor positions for the plates
-            CreateMotorPositions(rDir, cDir, RowOffset, ColumnOffset);
+            CreateMotorPositions();
 
 
         }
 
-        public void CreateMotorPositions(int rDir, int cDir, double RowOffset, double ColumnOffset)
+        public void CreateMotorPositions()
         {
             // Create new list of Motor Positions
             MotorList = new List<Motor>();
@@ -125,11 +125,11 @@ namespace FI.PlateReader.Gen4.JETI
                 double[] rowPositon = new double[PlateList[i].Row];
                 double[] columnPosition = new double[PlateList[i].Column];
 
-                GetPosition(i, ref rowPositon, ref columnPosition, rDir, cDir, RowOffset, ColumnOffset);
+                GetPosition(i, ref rowPositon, ref columnPosition);
 
                 // Add info to Class
-                MotorList[i].RowReference = RowOffset;
-                MotorList[i].ColumnReference = ColumnOffset;
+                MotorList[i].RowReference = info.RowOffset;
+                MotorList[i].ColumnReference = info.ColumnOffset;
 
                 MotorList[i].RowPosition = rowPositon;
                 MotorList[i].ColumnPosition = columnPosition;
@@ -138,7 +138,7 @@ namespace FI.PlateReader.Gen4.JETI
 
         }
 
-        public void GetPosition(int count, ref double[] rowPosition, ref double[] columnPosition, int rDir, int cDir, double RowOffset, double ColumnOffset)
+        public void GetPosition(int count, ref double[] rowPosition, ref double[] columnPosition)
         {
 
             // Get info from Plate Class
@@ -152,12 +152,12 @@ namespace FI.PlateReader.Gen4.JETI
             double plateColumnOffset = PlateList[count].ColumnOffset;
 
             // Row,Column Stage Direction (Determines if you are stepping forward or background, instrument/stage design dependent)
-            //int rDir = info.RowDirection;
-            //int cDir = info.ColumnDirection;
+            int rDir = info.RowDirection;
+            int cDir = info.ColumnDirection;
 
 
             // Row Positions
-            double rowOffset = RowOffset + rDir * plateRowOffset; // Reference and Plate Offset Combined
+            double rowOffset = info.RowOffset + rDir * plateRowOffset; // Reference and Plate Offset Combined
 
             for (int j = 0; j < Row; j++)
             {
@@ -166,7 +166,7 @@ namespace FI.PlateReader.Gen4.JETI
 
 
             // Column Positions
-            double columnOffset = ColumnOffset + cDir * plateColumnOffset;
+            double columnOffset = info.ColumnOffset + cDir * plateColumnOffset;
 
             for (int j = 0; j < Column; j++)
             {

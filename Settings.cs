@@ -5,110 +5,386 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
+using System.Runtime.InteropServices;
+using Versa_Handle_t = System.Int32;
 
 namespace FI.PlateReader.Gen4.JETI
 {
-    class Settings
+    unsafe class Settings
     {
-                          
+        public enum Versa_DeviceType { Versa_UnknownDevice, Versa_InterfaceBoard_35_1 };
+
+        // Versa
+        [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Versa_getVersion(int* majorVersion, int* minorVersion);
+
+        [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Versa_getAvailableDevices(int* deviceCount, Versa_DeviceType* deviceTypes);
+
+        [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Versa_initialiseUSBSession();
+
+        [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Versa_closeSession();
+
+        [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Versa_resetAllPorts();
+
+        [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Versa_getLastErrorMessage(byte* message);
+
+        [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Versa_uploadUserData(byte* pData);
+
+        [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Versa_downloadUserData(byte* pData);
+
+        [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Versa_Peripheral_uploadUserData(Versa_Handle_t handle, byte* pData);
+
+        [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Versa_Peripheral_downloadUserData(Versa_Handle_t handle, byte* pData);
+
+
         public Info info { get; set; }
         public class Info
         {
-            /// <summary>
-            /// File 1
-            /// </summary>
+
+            // Hard code
+            public int RowBus = 8;
+            public int ColumnBus = 4;
+            public int LEDBus = 3;
+            public bool RowScan = true;
+            public bool LEDControl = true;
+            public bool MotorClosedLoop = true;
+            public bool SoftwarePositionCheck = true;
+
+            public int RowCurrent = 1200;                       // mA
+            public int RowStepsPerRev = 200;                    // steps per revolution
+            public int RowEncoderCountsPerRev = 4000;           // counts per revolution
+            public double RowUnitsPerRev = 40;                     // mm per revolution
+            public double RowSpeed = 100;                          // mm per second
+            public double RowAcceleration = 1000;                  // mm per second per second
+            public double RowPositionError = 0.5;               // mm
+            public bool RowMotorReverse = true;
+            public bool RowEncoderReverse = true;
+            public int RowMicrostep = 16;
+            public bool RowAccurateHome = true;
+
+            public int ColumnCurrent = 600;                     // mA
+            public int ColumnStepsPerRev = 200;                 // steps per revolution
+            public int ColumnEncoderCountsPerRev = 4000;        // counts per revolution
+            public double ColumnUnitsPerRev = 40;                  // mm per revolution
+            public double ColumnSpeed = 100;                       // mm per second
+            public double ColumnAcceleration = 1000;               // mm per second per second
+            public double ColumnPositionError = 0.5;            // mm
+            public bool ColumnMotorReverse = true;
+            public bool ColumnEncoderReverse = true;
+            public int ColumnMicrostep = 16;
+            public bool ColumnAccurateHome = true;
+
+            // VERSA Memory
+            public byte[] data;
+            public string FirmwareVersion;
+
+            // Serial Numbers & Name
+            public string InstrumentName;
+            public int InstrumentSerialNumber;
+            public int LEDSerialNumber;
+            public int SpectrometerSerialNumber;
 
             // Reference Positions
-            public string InstrumentName;
-            public int SerialNumber;
-            public int LEDSN;
-            public int SpecSN;
-            public int LedBus;
-            public int LedChannel;
-            public int RowBus;
-            public int ColumnBus;
             public double RowOffset;
             public double ColumnOffset;
             public double RowEject;
             public double ColumnEject;
+
+            // Scan Direction
             public int RowDirection;
             public int ColumnDirection;
-            public bool RowScan;
-            public bool LEDControl;
-            public bool MotorClosedLoop;
-            public bool SoftwarePositionCheck;
-            public bool ReadUserData;
-            public bool LEDPersist;
 
             // LED
-            public int LEDPulse;
-            public int LEDWL1;
-            public int LEDWL2;
-            public int LEDWL3;
-            public int LEDWL4;
-            public int LEDlimit1;
-            public int LEDlimit2;
-            public int LEDlimit3;
-            public int LEDlimit4;
+            public int LEDChannel = 1;
+            public bool LEDPulse;
+            public int LEDWavelength;
+            public int MaxCurrent;
 
-            // Row Motor
-            public string RowName;
-            public bool RowMotorReverse;
-            public bool RowEncoderReverse;
-            public int RowCurrent;
-            public int RowMicrostep;
-            public int RowFullStepsPerRev;
-            public int RowEncoderCountsPerRev;
-            public double RowUnitsPerRev;
-            public double RowPositionError;
-            public double RowSpeed;
-            public double RowAcceleration;
-            public bool RowAccurateHome;
-
-            // Column Motor
-            public string ColumnName;
-            public bool ColumnMotorReverse;
-            public bool ColumnEncoderReverse;
-            public int ColumnCurrent;
-            public int ColumnMicrostep;            
-            public int ColumnFullStepsPerRev;
-            public int ColumnEncoderCountsPerRev;
-            public double ColumnUnitsPerRev;
-            public double ColumnPositionError;
-            public double ColumnSpeed;
-            public double ColumnAcceleration;
-            public bool ColumnAccurateHome;
-
-            // Instrument
-            public double InstrumentGain;
-
-            // Spectrometer 
-            public string SpecName;
-            public int Pixel;
-            public int PostIntegrationWait;
+            // Spectrometer
+            public string Detector = "Spectrometer";
+            public int PostIntegrationWaitTime = 88;            // ms
             public int MinimumCycles;
+            public bool SpectrometerReverse;
+            public double SpectrometerGain;
+            public int NPixel;
             public double P0;
             public double P1;
             public double P2;
             public double P3;
             public double P4;
-            public double[] Wavelength;
+            public int StartPixel;
+            public int PixelLength;
+
             public double WavelengthStart;
             public double WavelengthEnd;
-            public double WavelengthSpacing;
-            public int PixelStart;
-            public int PixelEnd;
-            public int ActiveSize;
 
-            public int CorrectStart;
-            public int CorrectLength;
-            public double[] CorrectValues;
+            public double[] Wavelength;
+            public double[] WavelengthCorrection;
+
         }
 
 
 
         // Methods
+        public bool ReadData()
+        {
+            info = new Info();
+
+            // Read default values from configuration file.
+            ReadConfigFile();
+
+            // Connect to Versa
+            bool state = Connect();
+
+            // Try to download the data
+            if (state)
+            {
+                // Download data from EEPROM 
+                state = DownloadData();
+                Disconnect();
+            }
+
+            // Check if download was sucessfull
+            if (state)
+            {
+                return true;
+            }
+            else
+            {
+                DefaultValues();
+                return false;
+            }
+
+        }
+
+        public bool Connect()
+        {
+
+            // Get API Firmware Version
+            int majorVersion = 0;
+            int minorVersion = 0;
+            Versa_getVersion(&majorVersion, &minorVersion);
+
+            info.FirmwareVersion = majorVersion.ToString() + "." + minorVersion.ToString();
+
+            // Variables
+            bool state = false;
+
+            // Available devices
+            int deviceCount;
+            Versa_DeviceType versa_DeviceType;
+
+            CheckError(Versa_getAvailableDevices(&deviceCount, &versa_DeviceType));
+
+            if (deviceCount > 0)
+            {
+                state = CheckError(Versa_initialiseUSBSession());
+            }
+
+            return state;
+        }
+
+        public bool Disconnect()
+        {
+            return CheckError(Versa_closeSession());
+        }
+
+        public bool DownloadData()
+        {
+            // Initialise array to Versa Memory size
+            byte[] data = new byte[1792];
+
+            // Use fixed statement to access managed data
+            bool state = false;
+            unsafe
+            {
+                fixed (byte* dPointer = &data[0])
+                {
+                    state = CheckError(Versa_downloadUserData(dPointer));
+                }
+            }
+
+
+            // Sort Data
+            //info = new Info();
+            //ReadConfigFile();
+
+            // Name & Serial Number
+            info.data = data;
+            info.InstrumentName = Encoding.ASCII.GetString(data, 0, 10);
+            info.InstrumentSerialNumber = BitConverter.ToInt32(data, 10);
+            info.LEDSerialNumber = BitConverter.ToInt32(data, 14);
+            info.SpectrometerSerialNumber = BitConverter.ToInt32(data, 18);
+
+            // Stage
+            info.RowOffset = BitConverter.ToSingle(data, 22);
+            info.ColumnOffset = BitConverter.ToSingle(data, 26);
+            info.RowEject = BitConverter.ToSingle(data, 30);
+            info.ColumnEject = BitConverter.ToSingle(data, 34);
+
+            // Round values to two decimal places
+            info.RowOffset = Math.Round(info.RowOffset, 2);
+            info.ColumnOffset = Math.Round(info.ColumnOffset, 2);
+            info.RowEject = Math.Round(info.RowEject, 2);
+            info.ColumnEject = Math.Round(info.ColumnEject, 2);
+
+            info.RowDirection = BitConverter.ToInt32(data, 38);
+            info.ColumnDirection = BitConverter.ToInt32(data, 42);
+
+            // LED  
+            int temp = BitConverter.ToInt32(data, 46);
+            if (temp == 0)
+            {
+                info.LEDPulse = false;
+            }
+            else
+            {
+                info.LEDPulse = true;
+            }
+
+            info.LEDWavelength = BitConverter.ToInt32(data, 50);
+            info.MaxCurrent = BitConverter.ToInt32(data, 54);
+
+            // Spectrometer
+            info.SpectrometerGain = BitConverter.ToInt32(data, 58);
+            info.NPixel = BitConverter.ToInt32(data, 62);
+            info.MinimumCycles = info.NPixel + 102;
+
+            info.P0 = BitConverter.ToSingle(data, 66);
+            info.P1 = BitConverter.ToSingle(data, 70);
+            info.P2 = BitConverter.ToSingle(data, 74);
+            info.P3 = BitConverter.ToSingle(data, 78);
+            info.P4 = BitConverter.ToSingle(data, 82);
+
+            info.StartPixel = BitConverter.ToInt32(data, 86);
+            info.PixelLength = BitConverter.ToInt32(data, 90);
+
+            // Wavelength Correction
+            info.WavelengthCorrection = new double[400];
+            int startByte = 94;
+
+            for(int i = 0; i < 400; i++)
+            {
+                info.WavelengthCorrection[i] = BitConverter.ToSingle(data, i * 4 + startByte);
+            }
+
+            // Create Wavelength
+            info.Wavelength = new double[info.NPixel];
+
+            for (int i = 0; i < info.NPixel; i++)
+            {
+                double p0 = info.P0;
+                double p1 = Math.Pow(i+1, 1) * info.P1;
+                double p2 = Math.Pow(i+1, 2) * info.P2;
+                double p3 = Math.Pow(i+1, 3) * info.P3;
+                double p4 = Math.Pow(i+1, 4) * info.P4;
+
+                double value = (p0 + p1 + p2 + p3 + p4);
+                info.Wavelength[i] = value;
+            }
+
+            // If array is from High to Low, then reverse it (It should be low to high)
+            if(info.Wavelength[0] > info.Wavelength[info.NPixel - 1])
+            {
+                info.SpectrometerReverse = true;
+                Array.Reverse(info.Wavelength);                
+            }
+            else
+            {
+                info.SpectrometerReverse = false;
+            }
+
+            info.WavelengthStart = Math.Floor(info.Wavelength[info.StartPixel]);
+            info.WavelengthEnd = Math.Floor(info.Wavelength[info.StartPixel + info.PixelLength]);
+
+            // Check Values
+            if (state)
+            {
+                return CheckValues();
+            }
+            else
+            {
+                return false;
+            }
+
+        }
+
+        public void DefaultValues()
+        {
+
+            // Sort Data
+            info = new Info();
+
+            // Name & Serial Number
+            info.InstrumentName = "SUPR-UV";
+            info.InstrumentSerialNumber = 1;
+            info.LEDSerialNumber = 1;
+            info.SpectrometerSerialNumber = 1;
+
+            // Stage
+            info.RowOffset = 96;
+            info.ColumnOffset = 127;
+            info.RowEject = 230;
+            info.ColumnEject = 52;
+            info.RowDirection = -1;
+            info.ColumnDirection = -1;
+
+            // LED
+            info.LEDPulse = false;
+            info.LEDWavelength = 275;
+            info.MaxCurrent = 200;
+
+            // Spectrometer
+            info.SpectrometerGain = 1;
+            info.NPixel = 2048;
+            info.MinimumCycles = info.NPixel + 102;
+
+            info.P0 = 35.6005;
+            info.P1 = 0.211684;
+            info.P2 = 0.0000849592;
+            info.P3 = -0.0000000370257;
+            info.P4 = 0.00000000000232069;
+
+            info.StartPixel = 1045;
+            info.PixelLength = 400;
+
+            // Wavelength Correction
+            info.WavelengthCorrection = new double[400];
+
+
+            for (int i = 0; i < 400; i++)
+            {
+                info.WavelengthCorrection[i] = 1;
+            }
+
+            // Create Wavelength
+            info.Wavelength = new double[info.NPixel];
+
+            for (int i = 0; i < info.NPixel; i++)
+            {
+                double p0 = info.P0;
+                double p1 = Math.Pow(i + 1, 1) * info.P1;
+                double p2 = Math.Pow(i + 1, 2) * info.P2;
+                double p3 = Math.Pow(i + 1, 3) * info.P3;
+                double p4 = Math.Pow(i + 1, 4) * info.P4;
+
+                double value = (p0 + p1 + p2 + p3 + p4);
+                info.Wavelength[i] = value;
+            }
+
+            info.WavelengthStart = info.Wavelength[info.StartPixel];
+            info.WavelengthEnd = info.Wavelength[info.StartPixel + info.PixelLength];
+        }
+
         public void ReadConfigFile()
         {
             info = new Info();
@@ -116,7 +392,7 @@ namespace FI.PlateReader.Gen4.JETI
             // Read Config Files
             // Get plate configuration filename
             string filepath;
-            string filename = "SUPR-UV_Default.scfg";
+            string filename = "SUPR-CM_Default.scfgx";
 
             filepath = Directory.GetCurrentDirectory();
             filepath = Path.GetFullPath(Path.Combine(filepath, @"../../../"));
@@ -130,296 +406,11 @@ namespace FI.PlateReader.Gen4.JETI
             {
                 // Instrument
                 info.InstrumentName = Values[0];
-                info.SerialNumber = Convert.ToInt32(Values[1]);
-                info.LedBus= Convert.ToInt32(Values[2]);
-                info.LedChannel = Convert.ToInt32(Values[3]);
-                info.RowBus = Convert.ToInt32(Values[4]);
-                info.ColumnBus = Convert.ToInt32(Values[5]);
-                info.RowOffset = Convert.ToDouble(Values[6]);
-                info.ColumnOffset = Convert.ToDouble(Values[7]);
-                info.RowEject = Convert.ToDouble(Values[8]);
-                info.ColumnEject = Convert.ToDouble(Values[9]);
-
-                // LED
-                info.LEDWL1 = Convert.ToInt32(Values[10]);
-                info.LEDWL2 = Convert.ToInt32(Values[11]);
-                info.LEDWL3 = Convert.ToInt32(Values[12]);
-                info.LEDWL4 = Convert.ToInt32(Values[13]);
-                info.LEDlimit1 = Convert.ToInt32(Values[14]);
-                info.LEDlimit2 = Convert.ToInt32(Values[15]);
-                info.LEDlimit3 = Convert.ToInt32(Values[16]);
-                info.LEDlimit4 = Convert.ToInt32(Values[17]);
-
-                // Row Motor
-                info.RowName = Values[18];
-                info.RowMotorReverse = Convert.ToBoolean(Values[19]);
-                info.RowEncoderReverse = Convert.ToBoolean(Values[20]);
-                info.RowDirection = Convert.ToInt32(Values[21]);
-                info.RowCurrent = Convert.ToInt32(Values[22]);
-                info.RowMicrostep = Convert.ToInt32(Values[23]);
-                info.RowFullStepsPerRev = Convert.ToInt32(Values[24]);
-                info.RowEncoderCountsPerRev = Convert.ToInt32(Values[25]);
-                info.RowUnitsPerRev = Convert.ToDouble(Values[26]);
-                info.RowPositionError = Convert.ToDouble(Values[27]);
-                info.RowSpeed = Convert.ToDouble(Values[28]);
-                info.RowAcceleration = Convert.ToDouble(Values[29]);
-                info.RowAccurateHome = false;
-
-                // Column Motor
-                info.ColumnName = Values[30];
-                info.ColumnMotorReverse = Convert.ToBoolean(Values[31]);
-                info.ColumnEncoderReverse = Convert.ToBoolean(Values[32]);
-                info.ColumnDirection = Convert.ToInt32(Values[33]);
-                info.ColumnCurrent = Convert.ToInt32(Values[34]);
-                info.ColumnMicrostep = Convert.ToInt32(Values[35]);
-                info.ColumnFullStepsPerRev = Convert.ToInt32(Values[36]);
-                info.ColumnEncoderCountsPerRev = Convert.ToInt32(Values[37]);
-                info.ColumnUnitsPerRev = Convert.ToDouble(Values[38]);
-                info.ColumnPositionError = Convert.ToDouble(Values[39]);
-                info.ColumnSpeed = Convert.ToDouble(Values[40]);
-                info.ColumnAcceleration = Convert.ToDouble(Values[41]);
-                info.ColumnAccurateHome = false;
-
-                // Spectrometer 
-                info.SpecName = Values[42];
-                info.SpecSN = Convert.ToInt32(Values[43]);
-                info.Pixel = Convert.ToInt32(Values[44]);
-                info.PostIntegrationWait = Convert.ToInt32(Values[45]);
-                info.MinimumCycles = Convert.ToInt32(Values[46]);
-                //info.PostIntegrationWait = 88;
-                //info.MinimumCycles = info.Pixel + 102;
-                info.P0 = Convert.ToDouble(Values[47]);
-                info.P1 = Convert.ToDouble(Values[48]);
-                info.P2 = Convert.ToDouble(Values[49]);
-                info.P3 = Convert.ToDouble(Values[50]);
-                info.P4 = Convert.ToDouble(Values[51]);
-
-                info.WavelengthStart = Convert.ToDouble(Values[52]);
-                info.WavelengthEnd = Convert.ToDouble(Values[53]);
-                info.WavelengthSpacing = Convert.ToDouble(Values[54]);
-
-                // Program Settings
-                info.RowScan = Convert.ToBoolean(Values[55]);
-                info.LEDControl = Convert.ToBoolean(Values[56]);
-                info.SoftwarePositionCheck = Convert.ToBoolean(Values[57]);
-                info.ReadUserData = Convert.ToBoolean(Values[58]);
-                info.LEDPersist = Convert.ToBoolean(Values[59]);
-                info.MotorClosedLoop = false;
-
-                // Create Wavelength
-                info.Wavelength = new double[info.Pixel];
-
-                for (int i = 0; i < info.Pixel; i++)
-                {
-                    double p0 = info.P0;
-                    double p1 = Math.Pow(i, 1) * info.P1;
-                    double p2 = Math.Pow(i, 2) * info.P2;
-                    double p3 = Math.Pow(i, 3) * info.P3;
-                    double p4 = Math.Pow(i, 4) * info.P4;
-
-                    double value = (p0 + p1 + p2 + p3 + p4);
-                    info.Wavelength[i] = value;
-                }
-
-                // Find Start Pixel for Wavelength Start
-                for (int i = 0; i < info.Pixel; i++)
-                {
-                    if (info.Wavelength[i] > info.WavelengthStart)
-                    {
-                        info.PixelStart = i;
-                        break;
-                    }
-                }
-
-                // Find End Pixel for Wavelength End
-                for (int i = 0; i < info.Pixel; i++)
-                {
-                    if (info.Wavelength[i] > info.WavelengthEnd)
-                    {
-                        info.PixelEnd = i;
-                        break;
-                    }
-                }
-
-                int count = 0;
-                for (int i = info.PixelStart; i < info.PixelEnd; i++)
-                {
-                    count++;
-                }
-
-                info.ActiveSize = count;
-
-            }
-        }
-
-        public void ReadConfigFile(string filename)
-        {
-            info = new Info();
-
-            // Read Config Files
-            // Get plate configuration filename
-            string filepath;
-
-            filepath = Directory.GetCurrentDirectory();
-            filepath = Path.GetFullPath(Path.Combine(filepath, @"../../../"));
-            filename = Path.Combine(filepath, "configurationFiles", filename);
-
-            // Read File
-            List<string> Values = new List<string>();
-            bool status = ReadFile(filename, ref Values);
-
-            if (status)
-            {
-                // Instrument
-                info.InstrumentName = Values[0];
-                info.SerialNumber = Convert.ToInt32(Values[1]);
-                info.LedBus = Convert.ToInt32(Values[2]);
-                info.LedChannel = Convert.ToInt32(Values[3]);
-                info.RowBus = Convert.ToInt32(Values[4]);
-                info.ColumnBus = Convert.ToInt32(Values[5]);
-                info.RowOffset = Convert.ToDouble(Values[6]);
-                info.ColumnOffset = Convert.ToDouble(Values[7]);
-                info.RowEject = Convert.ToDouble(Values[8]);
-                info.ColumnEject = Convert.ToDouble(Values[9]);
-
-                // LED
-                info.LEDWL1 = Convert.ToInt32(Values[10]);
-                info.LEDWL2 = Convert.ToInt32(Values[11]);
-                info.LEDWL3 = Convert.ToInt32(Values[12]);
-                info.LEDWL4 = Convert.ToInt32(Values[13]);
-                info.LEDlimit1 = Convert.ToInt32(Values[14]);
-                info.LEDlimit2 = Convert.ToInt32(Values[15]);
-                info.LEDlimit3 = Convert.ToInt32(Values[16]);
-                info.LEDlimit4 = Convert.ToInt32(Values[17]);
-
-                // Row Motor
-                info.RowName = Values[18];
-                info.RowMotorReverse = Convert.ToBoolean(Values[19]);
-                info.RowEncoderReverse = Convert.ToBoolean(Values[20]);
-                info.RowDirection = Convert.ToInt32(Values[21]);
-                info.RowCurrent = Convert.ToInt32(Values[22]);
-                info.RowMicrostep = Convert.ToInt32(Values[23]);
-                info.RowFullStepsPerRev = Convert.ToInt32(Values[24]);
-                info.RowEncoderCountsPerRev = Convert.ToInt32(Values[25]);
-                info.RowUnitsPerRev = Convert.ToDouble(Values[26]);
-                info.RowPositionError = Convert.ToDouble(Values[27]);
-                info.RowSpeed = Convert.ToDouble(Values[28]);
-                info.RowAcceleration = Convert.ToDouble(Values[29]);
-                info.RowAccurateHome = false;
-
-                // Column Motor
-                info.ColumnName = Values[30];
-                info.ColumnMotorReverse = Convert.ToBoolean(Values[31]);
-                info.ColumnEncoderReverse = Convert.ToBoolean(Values[32]);
-                info.ColumnDirection = Convert.ToInt32(Values[33]);
-                info.ColumnCurrent = Convert.ToInt32(Values[34]);
-                info.ColumnMicrostep = Convert.ToInt32(Values[35]);
-                info.ColumnFullStepsPerRev = Convert.ToInt32(Values[36]);
-                info.ColumnEncoderCountsPerRev = Convert.ToInt32(Values[37]);
-                info.ColumnUnitsPerRev = Convert.ToDouble(Values[38]);
-                info.ColumnPositionError = Convert.ToDouble(Values[39]);
-                info.ColumnSpeed = Convert.ToDouble(Values[40]);
-                info.ColumnAcceleration = Convert.ToDouble(Values[41]);
-                info.ColumnAccurateHome = false;
-
-                // Spectrometer 
-                info.SpecName = Values[42];
-                info.SpecSN = Convert.ToInt32(Values[43]);
-                info.Pixel = Convert.ToInt32(Values[44]);
-                info.PostIntegrationWait = Convert.ToInt32(Values[45]);
-                info.MinimumCycles = Convert.ToInt32(Values[46]);
-                //info.PostIntegrationWait = 88;
-                //info.MinimumCycles = info.Pixel + 102;
-                info.P0 = Convert.ToDouble(Values[47]);
-                info.P1 = Convert.ToDouble(Values[48]);
-                info.P2 = Convert.ToDouble(Values[49]);
-                info.P3 = Convert.ToDouble(Values[50]);
-                info.P4 = Convert.ToDouble(Values[51]);
-
-                info.WavelengthStart = Convert.ToDouble(Values[52]);
-                info.WavelengthEnd = Convert.ToDouble(Values[53]);
-                info.WavelengthSpacing = Convert.ToDouble(Values[54]);
-
-                // Program Settings
-                info.RowScan = Convert.ToBoolean(Values[55]);
-                info.LEDControl = Convert.ToBoolean(Values[56]);
-                info.SoftwarePositionCheck = Convert.ToBoolean(Values[57]);
-                info.ReadUserData = Convert.ToBoolean(Values[58]);
-                info.LEDPersist = Convert.ToBoolean(Values[59]);
-                info.MotorClosedLoop = false;
-
-                // Create Wavelength
-                info.Wavelength = new double[info.Pixel];
-
-                for (int i = 0; i < info.Pixel; i++)
-                {
-                    double p0 = info.P0;
-                    double p1 = Math.Pow(i, 1) * info.P1;
-                    double p2 = Math.Pow(i, 2) * info.P2;
-                    double p3 = Math.Pow(i, 3) * info.P3;
-                    double p4 = Math.Pow(i, 4) * info.P4;
-
-                    double value = (p0 + p1 + p2 + p3 + p4);
-                    info.Wavelength[i] = value;
-                }
-
-                // Find Start Pixel for Wavelength Start
-                for (int i = 0; i < info.Pixel; i++)
-                {
-                    if (info.Wavelength[i] > info.WavelengthStart)
-                    {
-                        info.PixelStart = i;
-                        break;
-                    }
-                }
-
-                // Find End Pixel for Wavelength End
-                for (int i = 0; i < info.Pixel; i++)
-                {
-                    if (info.Wavelength[i] > info.WavelengthEnd)
-                    {
-                        info.PixelEnd = i;
-                        break;
-                    }
-                }
-
-                int count = 0;
-                for (int i = info.PixelStart; i < info.PixelEnd; i++)
-                {
-                    count++;
-                }
-
-                info.ActiveSize = count;
-
-            }
-        }
-
-        public void ReadConfigFileNew()
-        {
-            info = new Info();
-
-            // Read Config Files
-            // Get plate configuration filename
-            string filepath;
-            string filename = "SUPR-UV_Default.scfgx";
-
-            filepath = Directory.GetCurrentDirectory();
-            filepath = Path.GetFullPath(Path.Combine(filepath, @"../../../"));
-            filename = Path.Combine(filepath, "configurationFiles", filename);
-
-            // Read File
-            List<string> Values = new List<string>();
-            bool status = ReadFile(filename, ref Values);
-
-            if (status)
-            {
-                // Instrument
-                info.InstrumentName = Values[0];
-                info.SerialNumber = Convert.ToInt32(Values[1]);
-                info.LEDSN = Convert.ToInt32(Values[2]);
-                info.SpecSN = Convert.ToInt32(Values[3]);
-                info.LedBus = Convert.ToInt32(Values[4]);
-                info.LedChannel = Convert.ToInt32(Values[5]);
+                info.InstrumentSerialNumber = Convert.ToInt32(Values[1]);
+                info.LEDSerialNumber = Convert.ToInt32(Values[2]);
+                info.SpectrometerSerialNumber = Convert.ToInt32(Values[3]);
+                info.LEDBus = Convert.ToInt32(Values[4]);
+                info.LEDChannel = Convert.ToInt32(Values[5]);
                 info.RowBus = Convert.ToInt32(Values[6]);
                 info.ColumnBus = Convert.ToInt32(Values[7]);
                 info.RowOffset = Convert.ToDouble(Values[8]);
@@ -434,69 +425,55 @@ namespace FI.PlateReader.Gen4.JETI
                 info.LEDControl = Convert.ToBoolean(Values[15]);
                 info.MotorClosedLoop = Convert.ToBoolean(Values[16]);
                 info.SoftwarePositionCheck = Convert.ToBoolean(Values[17]);
-                info.ReadUserData = Convert.ToBoolean(Values[18]);
-                info.LEDPersist = Convert.ToBoolean(Values[19]);
 
                 // LED
-                info.LEDPulse = Convert.ToInt32(Values[20]);
-                info.LEDWL1 = Convert.ToInt32(Values[21]);
-                info.LEDWL2 = Convert.ToInt32(Values[22]);
-                info.LEDWL3 = Convert.ToInt32(Values[23]);
-                info.LEDWL4 = Convert.ToInt32(Values[24]);
-                info.LEDlimit1 = Convert.ToInt32(Values[25]);
-                info.LEDlimit2 = Convert.ToInt32(Values[26]);
-                info.LEDlimit3 = Convert.ToInt32(Values[27]);
-                info.LEDlimit4 = Convert.ToInt32(Values[28]);
+                info.LEDPulse = Convert.ToBoolean(Values[18]);
+                info.LEDWavelength = Convert.ToInt32(Values[19]);
+                info.MaxCurrent = Convert.ToInt32(Values[20]);
 
                 // Row Motor
-                info.RowName = Values[29];
-                info.RowMotorReverse = Convert.ToBoolean(Values[30]);
-                info.RowEncoderReverse = Convert.ToBoolean(Values[31]);
-                info.RowCurrent = Convert.ToInt32(Values[32]);
-                info.RowMicrostep = Convert.ToInt32(Values[33]);
-                info.RowFullStepsPerRev = Convert.ToInt32(Values[34]);
-                info.RowEncoderCountsPerRev = Convert.ToInt32(Values[35]);
-                info.RowUnitsPerRev = Convert.ToDouble(Values[36]);
-                info.RowPositionError = Convert.ToDouble(Values[37]);
-                info.RowSpeed = Convert.ToDouble(Values[38]);
-                info.RowAcceleration = Convert.ToDouble(Values[39]);
-                info.RowAccurateHome = Convert.ToBoolean(Values[40]);
+                info.RowMotorReverse = Convert.ToBoolean(Values[21]);
+                info.RowEncoderReverse = Convert.ToBoolean(Values[22]);
+                info.RowCurrent = Convert.ToInt32(Values[23]);
+                info.RowMicrostep = Convert.ToInt32(Values[24]);
+                info.RowStepsPerRev = Convert.ToInt32(Values[25]);
+                info.RowEncoderCountsPerRev = Convert.ToInt32(Values[26]);
+                info.RowUnitsPerRev = Convert.ToDouble(Values[27]);
+                info.RowPositionError = Convert.ToDouble(Values[28]);
+                info.RowSpeed = Convert.ToDouble(Values[29]);
+                info.RowAcceleration = Convert.ToDouble(Values[30]);
+                info.RowAccurateHome = Convert.ToBoolean(Values[31]);
 
                 // Column Motor
-                info.ColumnName = Values[41];
-                info.ColumnMotorReverse = Convert.ToBoolean(Values[42]);
-                info.ColumnEncoderReverse = Convert.ToBoolean(Values[43]);
-                info.ColumnCurrent = Convert.ToInt32(Values[44]);
-                info.ColumnMicrostep = Convert.ToInt32(Values[45]);
-                info.ColumnFullStepsPerRev = Convert.ToInt32(Values[46]);
-                info.ColumnEncoderCountsPerRev = Convert.ToInt32(Values[47]);
-                info.ColumnUnitsPerRev = Convert.ToDouble(Values[48]);
-                info.ColumnPositionError = Convert.ToDouble(Values[49]);
-                info.ColumnSpeed = Convert.ToDouble(Values[50]);
-                info.ColumnAcceleration = Convert.ToDouble(Values[51]);
-                info.ColumnAccurateHome = Convert.ToBoolean(Values[52]);
-
-                info.InstrumentGain = Convert.ToDouble(Values[53]);
+                info.ColumnMotorReverse = Convert.ToBoolean(Values[32]);
+                info.ColumnEncoderReverse = Convert.ToBoolean(Values[33]);
+                info.ColumnCurrent = Convert.ToInt32(Values[34]);
+                info.ColumnMicrostep = Convert.ToInt32(Values[35]);
+                info.ColumnStepsPerRev = Convert.ToInt32(Values[36]);
+                info.ColumnEncoderCountsPerRev = Convert.ToInt32(Values[37]);
+                info.ColumnUnitsPerRev = Convert.ToDouble(Values[38]);
+                info.ColumnPositionError = Convert.ToDouble(Values[39]);
+                info.ColumnSpeed = Convert.ToDouble(Values[40]);
+                info.ColumnAcceleration = Convert.ToDouble(Values[41]);
+                info.ColumnAccurateHome = Convert.ToBoolean(Values[42]);
 
                 // Spectrometer 
-                info.SpecName = Values[54];
-                info.Pixel = Convert.ToInt32(Values[55]);
-                info.PostIntegrationWait = Convert.ToInt32(Values[56]);
-                info.MinimumCycles = Convert.ToInt32(Values[57]);
-                info.P0 = Convert.ToDouble(Values[58]);
-                info.P1 = Convert.ToDouble(Values[59]);
-                info.P2 = Convert.ToDouble(Values[60]);
-                info.P3 = Convert.ToDouble(Values[61]);
-                info.P4 = Convert.ToDouble(Values[62]);
+                info.Detector = Values[43];
+                info.SpectrometerGain = Convert.ToDouble(Values[44]);
 
-                info.WavelengthStart = Convert.ToDouble(Values[63]);
-                info.WavelengthEnd = Convert.ToDouble(Values[64]);
-                info.WavelengthSpacing = Convert.ToDouble(Values[65]);
-
+                info.NPixel = Convert.ToInt32(Values[45]);
+                info.PostIntegrationWaitTime = Convert.ToInt32(Values[46]);
+                info.MinimumCycles = Convert.ToInt32(Values[47]);
+                info.P0 = Convert.ToDouble(Values[48]);
+                info.P1 = Convert.ToDouble(Values[49]);
+                info.P2 = Convert.ToDouble(Values[50]);
+                info.P3 = Convert.ToDouble(Values[51]);
+                info.P4 = Convert.ToDouble(Values[52]);
+            
                 // Create Wavelength
-                info.Wavelength = new double[info.Pixel];
+                info.Wavelength = new double[info.NPixel];
 
-                for (int i = 0; i < info.Pixel; i++)
+                for (int i = 0; i < info.NPixel; i++)
                 {
                     double p0 = info.P0;
                     double p1 = Math.Pow(i, 1) * info.P1;
@@ -508,197 +485,17 @@ namespace FI.PlateReader.Gen4.JETI
                     info.Wavelength[i] = value;
                 }
 
-                // Find Start Pixel for Wavelength Start
-                for (int i = 0; i < info.Pixel; i++)
+                info.StartPixel = Convert.ToInt32(Values[53]);
+                info.PixelLength = Convert.ToInt32(Values[54]);
+
+                info.WavelengthStart = info.Wavelength[info.StartPixel];
+                info.WavelengthEnd = info.Wavelength[info.StartPixel + info.PixelLength];
+
+                info.WavelengthCorrection = new double[info.PixelLength];
+
+                for (int i = 0; i < info.PixelLength; i++)
                 {
-                    if (info.Wavelength[i] > info.WavelengthStart)
-                    {
-                        info.PixelStart = i;
-                        break;
-                    }
-                }
-
-                // Find End Pixel for Wavelength End
-                for (int i = 0; i < info.Pixel; i++)
-                {
-                    if (info.Wavelength[i] > info.WavelengthEnd)
-                    {
-                        info.PixelEnd = i;
-                        break;
-                    }
-                }
-
-                int count = 0;
-                for (int i = info.PixelStart; i < info.PixelEnd; i++)
-                {
-                    count++;
-                }
-
-                info.ActiveSize = count;
-
-
-                info.CorrectStart = Convert.ToInt32(Values[66]);
-                info.CorrectLength = Convert.ToInt32(Values[67]);
-
-                info.CorrectValues = new double[info.CorrectLength];
-
-                for (int i = 0; i < info.CorrectLength; i++)
-                {
-                    info.CorrectValues[i] = Convert.ToDouble(Values[68 + i]);
-                }
-
-            }
-        }
-
-        public void ReadConfigFileNew(string filename)
-        {
-            info = new Info();
-
-            // Read Config Files
-            // Get plate configuration filename
-            string filepath;
-
-            filepath = Directory.GetCurrentDirectory();
-            filepath = Path.GetFullPath(Path.Combine(filepath, @"../../../"));
-            filename = Path.Combine(filepath, "configurationFiles", filename);
-
-            // Read File
-            List<string> Values = new List<string>();
-            bool status = ReadFile(filename, ref Values);
-
-            if (status)
-            {
-                // Instrument
-                info.InstrumentName = Values[0];
-                info.SerialNumber = Convert.ToInt32(Values[1]);
-                info.LEDSN = Convert.ToInt32(Values[2]);
-                info.SpecSN = Convert.ToInt32(Values[3]);
-                info.LedBus = Convert.ToInt32(Values[4]);
-                info.LedChannel = Convert.ToInt32(Values[5]);
-                info.RowBus = Convert.ToInt32(Values[6]);
-                info.ColumnBus = Convert.ToInt32(Values[7]);
-                info.RowOffset = Convert.ToDouble(Values[8]);
-                info.ColumnOffset = Convert.ToDouble(Values[9]);
-                info.RowEject = Convert.ToDouble(Values[10]);
-                info.ColumnEject = Convert.ToDouble(Values[11]);
-                info.RowDirection = Convert.ToInt32(Values[12]);
-                info.ColumnDirection = Convert.ToInt32(Values[13]);
-
-                // Program Settings
-                info.RowScan = Convert.ToBoolean(Values[14]);
-                info.LEDControl = Convert.ToBoolean(Values[15]);
-                info.MotorClosedLoop = Convert.ToBoolean(Values[16]);
-                info.SoftwarePositionCheck = Convert.ToBoolean(Values[17]);
-                info.ReadUserData = Convert.ToBoolean(Values[18]);
-                info.LEDPersist = Convert.ToBoolean(Values[19]);
-
-                // LED
-                info.LEDPulse = Convert.ToInt32(Values[20]);
-                info.LEDWL1 = Convert.ToInt32(Values[21]);
-                info.LEDWL2 = Convert.ToInt32(Values[22]);
-                info.LEDWL3 = Convert.ToInt32(Values[23]);
-                info.LEDWL4 = Convert.ToInt32(Values[24]);
-                info.LEDlimit1 = Convert.ToInt32(Values[25]);
-                info.LEDlimit2 = Convert.ToInt32(Values[26]);
-                info.LEDlimit3 = Convert.ToInt32(Values[27]);
-                info.LEDlimit4 = Convert.ToInt32(Values[28]);
-
-                // Row Motor
-                info.RowName = Values[29];
-                info.RowMotorReverse = Convert.ToBoolean(Values[30]);
-                info.RowEncoderReverse = Convert.ToBoolean(Values[31]);
-                info.RowCurrent = Convert.ToInt32(Values[32]);
-                info.RowMicrostep = Convert.ToInt32(Values[33]);
-                info.RowFullStepsPerRev = Convert.ToInt32(Values[34]);
-                info.RowEncoderCountsPerRev = Convert.ToInt32(Values[35]);
-                info.RowUnitsPerRev = Convert.ToDouble(Values[36]);
-                info.RowPositionError = Convert.ToDouble(Values[37]);
-                info.RowSpeed = Convert.ToDouble(Values[38]);
-                info.RowAcceleration = Convert.ToDouble(Values[39]);
-                info.RowAccurateHome = Convert.ToBoolean(Values[40]);
-
-                // Column Motor
-                info.ColumnName = Values[41];
-                info.ColumnMotorReverse = Convert.ToBoolean(Values[42]);
-                info.ColumnEncoderReverse = Convert.ToBoolean(Values[43]);                
-                info.ColumnCurrent = Convert.ToInt32(Values[44]);
-                info.ColumnMicrostep = Convert.ToInt32(Values[45]);
-                info.ColumnFullStepsPerRev = Convert.ToInt32(Values[46]);
-                info.ColumnEncoderCountsPerRev = Convert.ToInt32(Values[47]);
-                info.ColumnUnitsPerRev = Convert.ToDouble(Values[48]);
-                info.ColumnPositionError = Convert.ToDouble(Values[49]);
-                info.ColumnSpeed = Convert.ToDouble(Values[50]);
-                info.ColumnAcceleration = Convert.ToDouble(Values[51]);
-                info.ColumnAccurateHome = Convert.ToBoolean(Values[52]);
-
-                // Spectrometer 
-                info.SpecName = Values[54];
-                
-                info.Pixel = Convert.ToInt32(Values[55]);
-                info.PostIntegrationWait = Convert.ToInt32(Values[56]);
-                info.MinimumCycles = Convert.ToInt32(Values[57]);
-                info.P0 = Convert.ToDouble(Values[58]);
-                info.P1 = Convert.ToDouble(Values[59]);
-                info.P2 = Convert.ToDouble(Values[60]);
-                info.P3 = Convert.ToDouble(Values[61]);
-                info.P4 = Convert.ToDouble(Values[62]);
-
-                info.WavelengthStart = Convert.ToDouble(Values[63]);
-                info.WavelengthEnd = Convert.ToDouble(Values[64]);
-                info.WavelengthSpacing = Convert.ToDouble(Values[65]);
-
-                // Create Wavelength
-                info.Wavelength = new double[info.Pixel];
-
-                for (int i = 0; i < info.Pixel; i++)
-                {
-                    double p0 = info.P0;
-                    double p1 = Math.Pow(i, 1) * info.P1;
-                    double p2 = Math.Pow(i, 2) * info.P2;
-                    double p3 = Math.Pow(i, 3) * info.P3;
-                    double p4 = Math.Pow(i, 4) * info.P4;
-
-                    double value = (p0 + p1 + p2 + p3 + p4);
-                    info.Wavelength[i] = value;
-                }
-
-                // Find Start Pixel for Wavelength Start
-                for (int i = 0; i < info.Pixel; i++)
-                {
-                    if (info.Wavelength[i] > info.WavelengthStart)
-                    {
-                        info.PixelStart = i;
-                        break;
-                    }
-                }
-
-                // Find End Pixel for Wavelength End
-                for (int i = 0; i < info.Pixel; i++)
-                {
-                    if (info.Wavelength[i] > info.WavelengthEnd)
-                    {
-                        info.PixelEnd = i;
-                        break;
-                    }
-                }
-
-                int count = 0;
-                for (int i = info.PixelStart; i < info.PixelEnd; i++)
-                {
-                    count++;
-                }
-
-                info.ActiveSize = count;
-
-
-                info.CorrectStart = Convert.ToInt32(Values[66]);
-                info.CorrectLength = Convert.ToInt32(Values[67]);
-
-                info.CorrectValues = new double[info.CorrectLength];
-
-                for (int i=0; i < info.CorrectLength; i++)
-                {
-                    info.CorrectValues[i] = Convert.ToDouble(Values[68 + i]);
+                    info.WavelengthCorrection[i] = Convert.ToDouble(Values[55 + i]);
                 }
 
             }
@@ -712,7 +509,7 @@ namespace FI.PlateReader.Gen4.JETI
 
             if (!fileExist)
             {
-                MessageBox.Show("Could not find '" + filename +"' Configuration File!", "Information");
+                MessageBox.Show("Could not find '" + filename + "' Configuration File!", "Information");
                 return fileExist;
             }
 
@@ -746,444 +543,50 @@ namespace FI.PlateReader.Gen4.JETI
 
         }
 
-
-        public void WriteConfigFile(string filename)
+        // Error Handling
+        public bool CheckError(int value)
         {
-            string line;
+            // Initialize new byte array to receive the error message
+            byte[] data = new byte[1000];
 
-            using (StreamWriter file = new StreamWriter(@filename))
+            if (value == 0)
             {
-                line = "Name" + "\t" + info.InstrumentName;
-                file.WriteLine(line);
-
-                line = "SerialNumber" + "\t" + info.SerialNumber.ToString();
-                file.WriteLine(line);
-
-                line = "LEDbus" + "\t" + info.LedBus.ToString();
-                file.WriteLine(line);
-
-                line = "LEDchn" + "\t" + info.LedChannel.ToString();
-                file.WriteLine(line);
-
-                line = "RowBus" + "\t" + info.RowBus.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnBus" + "\t" + info.ColumnBus.ToString();
-                file.WriteLine(line);
-
-                line = "RowOffset" + "\t" + info.RowOffset.ToString("F3");
-                file.WriteLine(line);
-
-                line = "ColumnOffset" + "\t" + info.ColumnOffset.ToString("F3");
-                file.WriteLine(line);
-
-                line = "RowEject" + "\t" + info.RowEject.ToString("F3");
-                file.WriteLine(line);
-
-                line = "ColumnEject" + "\t" + info.ColumnEject.ToString("F3");
-                file.WriteLine(line);
-
-                line = "LEDWL1" + "\t" + info.LEDWL1.ToString();
-                file.WriteLine(line);
-
-                line = "LEDWL2" + "\t" + info.LEDWL2.ToString();
-                file.WriteLine(line);
-
-                line = "LEDWL3" + "\t" + info.LEDWL3.ToString();
-                file.WriteLine(line);
-
-                line = "LEDWL4" + "\t" + info.LEDWL4.ToString();
-                file.WriteLine(line);
-
-                line = "LEDlimit1" + "\t" + info.LEDlimit1.ToString();
-                file.WriteLine(line);
-
-                line = "LEDlimit2" + "\t" + info.LEDlimit2.ToString();
-                file.WriteLine(line);
-
-                line = "LEDlimit3" + "\t" + info.LEDlimit3.ToString();
-                file.WriteLine(line);
-
-                line = "LEDlimit4" + "\t" + info.LEDlimit4.ToString();
-                file.WriteLine(line);
-
-                line = "RowName" + "\t" + info.RowName;
-                file.WriteLine(line);
-
-                if (info.RowMotorReverse) { line = "RowMotorReverse" + "\t" + "TRUE"; }
-                else { line = "RowMotorReverse" + "\t" + "FALSE"; }
-                file.WriteLine(line);
-
-                if (info.RowEncoderReverse) { line = "RowEncoderReverse" + "\t" + "TRUE"; }
-                else { line = "RowEncoderReverse" + "\t" + "FALSE"; }
-                file.WriteLine(line);
-
-                line = "RowDirection" + "\t" + info.RowDirection.ToString();
-                file.WriteLine(line);
-
-                line = "RowCurrent" + "\t" + info.RowCurrent.ToString();
-                file.WriteLine(line);
-
-                line = "RowMicrostep" + "\t" + info.RowMicrostep.ToString();
-                file.WriteLine(line);
-
-                line = "RowFullsteps_per_rev" + "\t" + info.RowFullStepsPerRev.ToString();
-                file.WriteLine(line);
-
-                line = "RowEncoderCounts_per_rev" + "\t" + info.RowEncoderCountsPerRev.ToString();
-                file.WriteLine(line);
-
-                line = "RowUnits_per_rev" + "\t" + info.RowUnitsPerRev.ToString("F3");
-                file.WriteLine(line);
-
-                line = "RowPositionErrorThresh" + "\t" + info.RowPositionError.ToString("F3");
-                file.WriteLine(line);
-
-                line = "RowSpeed" + "\t" + info.RowSpeed.ToString("F3");
-                file.WriteLine(line);
-
-                line = "RowAcceleration" + "\t" + info.RowAcceleration.ToString("F3");
-                file.WriteLine(line);
-
-
-                line = "ColumnName" + "\t" + info.ColumnName;
-                file.WriteLine(line);
-
-                if (info.ColumnMotorReverse) { line = "ColumnMotorReverse =true"; }
-                else { line = "ColumnMotorReverse =false"; }
-                file.WriteLine(line);
-
-                if (info.ColumnEncoderReverse) { line = "ColumnEncoderReverse =true"; }
-                else { line = "ColumnEncoderReverse =false"; }
-                file.WriteLine(line);
-
-                line = "ColumnDirection" + "\t" + info.ColumnDirection.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnCurrent" + "\t" + info.ColumnCurrent.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnMicrostep" + "\t" + info.ColumnMicrostep.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnFullsteps_per_rev" + "\t" + info.ColumnFullStepsPerRev.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnEncoderCounts_per_rev" + "\t" + info.ColumnEncoderCountsPerRev.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnUnits_per_rev" + "\t" + info.ColumnUnitsPerRev.ToString("F3");
-                file.WriteLine(line);
-
-                line = "ColumnPositionErrorThresh" + "\t" + info.ColumnPositionError.ToString("F3");
-                file.WriteLine(line);
-
-                line = "ColumnSpeed" + "\t" + info.ColumnSpeed.ToString("F3");
-                file.WriteLine(line);
-
-                line = "ColumnAcceleration" + "\t" + info.ColumnAcceleration.ToString("F3");
-                file.WriteLine(line);
-
-                line = "SpecName" + "\t" + info.SpecName;
-                file.WriteLine(line);
-
-                line = "SpecSN" + "\t" + info.SpecSN.ToString();
-                file.WriteLine(line);
-
-                line = "Pixels" + "\t" + info.Pixel.ToString();
-                file.WriteLine(line);
-
-                line = "PostIntegrationWait" + "\t" + info.PostIntegrationWait.ToString();
-                file.WriteLine(line);
-
-                line = "MinimumCycles" + "\t" + info.MinimumCycles.ToString();
-                file.WriteLine(line);
-
-                float P0 = (float)info.P0;
-                line = "P0" + "\t" + P0.ToString();
-                file.WriteLine(line);
-
-                float P1 = (float)info.P1;
-                line = "P1" + "\t" + P1.ToString();
-                file.WriteLine(line);
-
-                float P2 = (float)info.P2;
-                line = "P2" + "\t" + P2.ToString();
-                file.WriteLine(line);
-
-                float P3 = (float)info.P3;
-                line = "P3" + "\t" + P3.ToString();
-                file.WriteLine(line);
-
-                float P4 = (float)info.P4;
-                line = "P4" + "\t" + P4.ToString();
-                file.WriteLine(line);
-
-                line = "WavelengthStart"+ "\t" + info.WavelengthStart.ToString();
-                file.WriteLine(line);
-
-                line = "WavelengthEnd" + "\t" + info.WavelengthEnd.ToString();
-                file.WriteLine(line);
-
-                line = "Spacing" + "\t" + info.WavelengthSpacing.ToString();
-                file.WriteLine(line);
-
-                line = "RowScan" + "\t" + info.RowScan.ToString();
-                file.WriteLine(line);
-
-                line = "LEDControl" + "\t" + info.LEDControl.ToString();
-                file.WriteLine(line);
-
-                line = "SoftwarePositionCheck" + "\t" + info.SoftwarePositionCheck.ToString();
-                file.WriteLine(line);
-
-                line = "ReadUserData" + "\t" + info.ReadUserData.ToString();
-                file.WriteLine(line);
-
-                line = "LEDPersist" + "\t" + info.LEDPersist.ToString();
-                file.WriteLine(line);
-
-                line = "End";
-                file.WriteLine(line);
+                return true;
             }
-        }
-
-        public void WriteConfigFileNew(string filename)
-        {
-            string line;
-
-            using (StreamWriter file = new StreamWriter(@filename))
+            else
             {
-                line = "Name" + "\t" + info.InstrumentName;
-                file.WriteLine(line);
-
-                line = "SerialNumber" + "\t" + info.SerialNumber.ToString();
-                file.WriteLine(line);
-
-                line = "LEDSN" + "\t" + info.LEDSN.ToString();
-                file.WriteLine(line);
-
-                line = "SpecSN" + "\t" + info.SpecSN.ToString();
-                file.WriteLine(line);
-
-                line = "LEDbus" + "\t" + info.LedBus.ToString();
-                file.WriteLine(line);
-
-                line = "LEDchn" + "\t" + info.LedChannel.ToString();
-                file.WriteLine(line);
-
-                line = "RowBus" + "\t" + info.RowBus.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnBus" + "\t" + info.ColumnBus.ToString();
-                file.WriteLine(line);
-
-                line = "RowOffset" + "\t" + info.RowOffset.ToString("F3");
-                file.WriteLine(line);
-
-                line = "ColumnOffset" + "\t" + info.ColumnOffset.ToString("F3");
-                file.WriteLine(line);
-
-                line = "RowEject" + "\t" + info.RowEject.ToString("F3");
-                file.WriteLine(line);
-
-                line = "ColumnEject" + "\t" + info.ColumnEject.ToString("F3");
-                file.WriteLine(line);
-
-                line = "RowScanDirection" + "\t" + info.RowDirection.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnScanDirection" + "\t" + info.ColumnDirection.ToString();
-                file.WriteLine(line);
-
-                line = "RowScan" + "\t" + info.RowScan.ToString();
-                file.WriteLine(line);
-
-                line = "LEDControl" + "\t" + info.LEDControl.ToString();
-                file.WriteLine(line);
-
-                line = "MotorClosedLoop" + "\t" + info.MotorClosedLoop.ToString();
-                file.WriteLine(line);
-
-                line = "SoftwarePositionCheck" + "\t" + info.SoftwarePositionCheck.ToString();
-                file.WriteLine(line);
-
-                line = "ReadUserData" + "\t" + info.ReadUserData.ToString();
-                file.WriteLine(line);
-
-                line = "LEDPersist" + "\t" + info.LEDPersist.ToString();
-                file.WriteLine(line);
-
-                line = "LEDPulse" + "\t" + info.LEDPulse.ToString();
-                file.WriteLine(line);
-
-                line = "LEDWL1" + "\t" + info.LEDWL1.ToString();
-                file.WriteLine(line);
-
-                line = "LEDWL2" + "\t" + info.LEDWL2.ToString();
-                file.WriteLine(line);
-
-                line = "LEDWL3" + "\t" + info.LEDWL3.ToString();
-                file.WriteLine(line);
-
-                line = "LEDWL4" + "\t" + info.LEDWL4.ToString();
-                file.WriteLine(line);
-
-                line = "LEDlimit1" + "\t" + info.LEDlimit1.ToString();
-                file.WriteLine(line);
-
-                line = "LEDlimit2" + "\t" + info.LEDlimit2.ToString();
-                file.WriteLine(line);
-
-                line = "LEDlimit3" + "\t" + info.LEDlimit3.ToString();
-                file.WriteLine(line);
-
-                line = "LEDlimit4" + "\t" + info.LEDlimit4.ToString();
-                file.WriteLine(line);
-
-                line = "RowName" + "\t" + info.RowName;
-                file.WriteLine(line);
-
-                line = "RowMotorReverse" + "\t" + info.RowMotorReverse.ToString();
-                file.WriteLine(line);
-
-                line = "RowEncoderReverse" + "\t" + info.RowEncoderReverse.ToString();
-                file.WriteLine(line);
-
-                //if (info.RowEncoderReverse) { line = "RowEncoderReverse" + "\t" + "TRUE"; }
-                //else { line = "RowEncoderReverse" + "\t" + "FALSE"; }
-                //file.WriteLine(line);
-
-                line = "RowCurrent" + "\t" + info.RowCurrent.ToString();
-                file.WriteLine(line);
-
-                line = "RowMicrostep" + "\t" + info.RowMicrostep.ToString();
-                file.WriteLine(line);
-
-                line = "RowFullsteps_per_rev" + "\t" + info.RowFullStepsPerRev.ToString();
-                file.WriteLine(line);
-
-                line = "RowEncoderCounts_per_rev" + "\t" + info.RowEncoderCountsPerRev.ToString();
-                file.WriteLine(line);
-
-                line = "RowUnits_per_rev" + "\t" + info.RowUnitsPerRev.ToString("F3");
-                file.WriteLine(line);
-
-                line = "RowPositionErrorThresh" + "\t" + info.RowPositionError.ToString("F3");
-                file.WriteLine(line);
-
-                line = "RowSpeed" + "\t" + info.RowSpeed.ToString("F3");
-                file.WriteLine(line);
-
-                line = "RowAcceleration" + "\t" + info.RowAcceleration.ToString("F3");
-                file.WriteLine(line);
-
-                line = "RowAccurateHome" + "\t" + info.RowAccurateHome.ToString();
-                file.WriteLine(line);
-
-
-                line = "ColumnName" + "\t" + info.ColumnName;
-                file.WriteLine(line);
-
-                line = "ColumnMotorReverse" + "\t" + info.ColumnMotorReverse.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnEncoderReverse" + "\t" + info.ColumnEncoderReverse.ToString();
-                file.WriteLine(line);
-
-
-                //if (info.ColumnEncoderReverse) { line = "ColumnEncoderReverse =true"; }
-                //else { line = "ColumnEncoderReverse =false"; }
-                //file.WriteLine(line);
-
-                line = "ColumnCurrent" + "\t" + info.ColumnCurrent.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnMicrostep" + "\t" + info.ColumnMicrostep.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnFullsteps_per_rev" + "\t" + info.ColumnFullStepsPerRev.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnEncoderCounts_per_rev" + "\t" + info.ColumnEncoderCountsPerRev.ToString();
-                file.WriteLine(line);
-
-                line = "ColumnUnits_per_rev" + "\t" + info.ColumnUnitsPerRev.ToString("F3");
-                file.WriteLine(line);
-
-                line = "ColumnPositionErrorThresh" + "\t" + info.ColumnPositionError.ToString("F3");
-                file.WriteLine(line);
-
-                line = "ColumnSpeed" + "\t" + info.ColumnSpeed.ToString("F3");
-                file.WriteLine(line);
-
-                line = "ColumnAcceleration" + "\t" + info.ColumnAcceleration.ToString("F3");
-                file.WriteLine(line);
-
-                line = "ColumnAccurateHome" + "\t" + info.ColumnAccurateHome.ToString();
-                file.WriteLine(line);
-
-                float g = (float)info.InstrumentGain;
-                line = "InstrumentGain" + "\t" + g.ToString();
-                file.WriteLine(line);
-
-                line = "SpecName" + "\t" + info.SpecName;
-                file.WriteLine(line);
-
-                line = "Pixels" + "\t" + info.Pixel.ToString();
-                file.WriteLine(line);
-
-                line = "PostIntegrationWait" + "\t" + info.PostIntegrationWait.ToString();
-                file.WriteLine(line);
-
-                line = "MinimumCycles" + "\t" + info.MinimumCycles.ToString();
-                file.WriteLine(line);
-
-                float P0 = (float)info.P0;
-                line = "P0" + "\t" + P0.ToString();
-                file.WriteLine(line);
-
-                float P1 = (float)info.P1;
-                line = "P1" + "\t" + P1.ToString();
-                file.WriteLine(line);
-
-                float P2 = (float)info.P2;
-                line = "P2" + "\t" + P2.ToString();
-                file.WriteLine(line);
-
-                float P3 = (float)info.P3;
-                line = "P3" + "\t" + P3.ToString();
-                file.WriteLine(line);
-
-                float P4 = (float)info.P4;
-                line = "P4" + "\t" + P4.ToString();
-                file.WriteLine(line);
-
-                line = "WavelengthStart" + "\t" + info.WavelengthStart.ToString();
-                file.WriteLine(line);
-
-                line = "WavelengthEnd" + "\t" + info.WavelengthEnd.ToString();
-                file.WriteLine(line);
-
-                line = "Spacing" + "\t" + info.WavelengthSpacing.ToString();
-                file.WriteLine(line);
-
-                line = "CorrectStart" + "\t" + info.CorrectStart.ToString();
-                file.WriteLine(line);
-
-                line = "CorrectLength" + "\t" + info.CorrectLength.ToString();
-                file.WriteLine(line);
-
-                for (int n=0; n < info.CorrectLength; n++)
+                unsafe
                 {
-                    float v = (float)info.CorrectValues[n];
-                    line = "V" + (n+1).ToString() + "\t" + v.ToString();
-                    file.WriteLine(line);
+                    fixed (byte* erPointer = &data[0])
+                    {
+                        Versa_getLastErrorMessage(erPointer);
+                    }
                 }
 
-                line = "End";
-                file.WriteLine(line);
+                // Convert byte array to string.
+                string msg = System.Text.Encoding.UTF8.GetString(data, 0, 1000);
+                if (msg.Contains('\0')) { msg = msg.Substring(0, msg.IndexOf('\0')); }
+
+                MessageBox.Show(msg);
             }
+
+            return false;
         }
+
+        public bool CheckValues()
+        {
+            return true;
+        }
+
+
+
+
+
+
+
+
+
+
+
     }
 }

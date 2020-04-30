@@ -9,7 +9,7 @@ namespace FI.PlateReader.Gen4.JETI
 { 
     class Instrument
     {
-        //public Settings.Info info;
+        public Settings.Info info;
 
         // Instrument UI Labels
         public string InstrumentStatus { get; set; }    // String of current label
@@ -17,64 +17,79 @@ namespace FI.PlateReader.Gen4.JETI
 
         public bool ActiveScan { get; set; }
         public bool ActiveProtocol { get; set; }
+        public bool Autoscale { get; set; }
+
+        // Kinetic Scan
+        public int CurrentScan { get; set; }
+        public int NScans { get; set; }
+        public int Delay { get; set; }
+
+        // Plate Type & Scan
+        public int scanType { get; set; }
+        public int plateType { get; set; }
+
+        // Row & Column Offset Positions (Well Image)
+        public string rowOffset { get; set; }
+        public string columnOffset { get; set; }
+
 
         // UI Variables
+        public List<string> ScanTypes = new List<string>();
         public List<string> PlotOptions = new List<string>();
-
-        public List<int> LedPower = new List<int>();
-        public List<int> Integration = new List<int>();
-
-        public List<double> Wavelength = new List<double>();
         public List<double> WavelengthBand = new List<double>();
+
+        public double WavelengthMinium { get; set; }
+        public double WavelengthMaximun { get; set; }
+        public int WavelengthAValue { get; set; }
+        public int WavelengthBValue { get; set; }
+
 
 
         // Methods
-        public void InitialValues(double WavelengthStart, double WavelengthEnd)
+        public void InitialValues()
         {
             // If microplate is being scanned
             ActiveScan = false;
+            Autoscale = true;
 
-            // Led Power
-            LedPower.Add(10);
-            LedPower.Add(20);
-            LedPower.Add(30);
-            LedPower.Add(40);
-            LedPower.Add(50);
-            LedPower.Add(60);
-            LedPower.Add(70);
-            LedPower.Add(80);
-            LedPower.Add(90);
-            LedPower.Add(100);
+            CurrentScan = 0;
+            NScans = 1;
 
-            //Integration 
-            Integration.Add(1);
-            Integration.Add(10);
-            Integration.Add(25);
-            Integration.Add(50);
-            Integration.Add(100);
-            Integration.Add(250);
-            Integration.Add(500);
-            Integration.Add(1000);
-            Integration.Add(2000);
+            rowOffset = "";
+            columnOffset = "";
 
             // Wavelength
-            int start = (int)WavelengthStart;
-            int end = (int)WavelengthEnd;
+            WavelengthMinium = info.WavelengthStart;
+            WavelengthMaximun = info.WavelengthEnd;
 
-            for(int i = 0; i < 20; i++)
+            if(info.LEDWavelength < 330)
             {
-                double value = start + (i * 10);
-
-                if (value > end)
-                    break;
-
-                Wavelength.Add(value);                
+                WavelengthAValue = 330;
+                WavelengthBValue = 360;
+            }
+            else if(info.LEDWavelength < 510)
+            {
+                WavelengthAValue = 520;
+                WavelengthBValue = 590;
+            }
+            else
+            {
+                WavelengthAValue = 590;
+                WavelengthBValue = 620;
             }
 
+            // Wavelength Bands
             WavelengthBand.Add(5);
             WavelengthBand.Add(10);
             WavelengthBand.Add(20);
             WavelengthBand.Add(40);
+
+            // Scan Types
+            ScanTypes.Add("Plate Scan");
+            ScanTypes.Add("Kinetic Scan");
+            ScanTypes.Add("Real Time Data");
+            ScanTypes.Add("Well Image");
+            ScanTypes.Add("LED Check");
 
             // Plot Options
             PlotOptions.Add("Intenisty A");
@@ -102,6 +117,11 @@ namespace FI.PlateReader.Gen4.JETI
             InstrumentLabels[21] = "Scan Finished Sucessfully! Start Scan, Eject Microplate, or Reset Protocol.";
             InstrumentLabels[22] = "Scan Canceled! Start Scan, Eject Microplate, or Reset Protocol.";
             InstrumentLabels[23] = "Closing Software";
+            InstrumentLabels[24] = "Plate Scan";
+            InstrumentLabels[25] = "Kinetic Scan";
+            InstrumentLabels[26] = "Real Time Data";
+            InstrumentLabels[27] = "Well Image";
+            InstrumentLabels[28] = "Led Check";
 
             SetInstrumentStatus(0);
         }

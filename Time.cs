@@ -13,36 +13,67 @@ namespace FI.PlateReader.Gen4.JETI
     {
 
         // Time Variables
-        Stopwatch stopwatch;
+        Stopwatch plateStopwatch;
+        Stopwatch scanStopwatch;
+
 
         public string StartDate { get; set; }       // Date of when experiment was started
+        
         public string StartPlateTime { get; set; }  // Start of Plate
         public string EndPlateTime { get; set; }    // End of Plate
-        public string PlateTime { get; set; }       // Current Plate time for time label
+        public string PlateTime { get; set; }       // Current Plate Time
+
+        public string StartScanTime { get; set; }   // Start of Scan
+        public string EndScanTime { get; set; }     // End of Scan
+        public string ScanTime { get; set; }        // Total Scan time
 
 
-        // Time Methods
-        public void StartTime()
+
+        
+
+        // Plate Time Methods
+        public void StartPlateStopwatch()
         {
-            stopwatch = new Stopwatch();
-            stopwatch.Start();
+            plateStopwatch = new Stopwatch();
+            plateStopwatch.Start();
 
-            StartDate = DateTime.Now.ToString("yyyy") + "/" + DateTime.Now.ToString("MM") + "/" + DateTime.Now.ToString("dd");
             StartPlateTime = DateTime.Now.ToString("HH") + ":" + DateTime.Now.ToString("mm") + ":" + DateTime.Now.ToString("ss");
         }
 
-        public void GetTime()
-        {
-            PlateTime = stopwatch.Elapsed.ToString(@"m\:ss");
-
-        }
-
-        public void EndTime()
+        public void EndPlateStopwatch()
         {
             EndPlateTime = DateTime.Now.ToString("HH") + ":" + DateTime.Now.ToString("mm") + ":" + DateTime.Now.ToString("ss");
 
         }
 
+        public void GetPlateTime()
+        {
+            PlateTime = plateStopwatch.Elapsed.ToString(@"m\:ss");
+        }
+
+
+        // Scan Time Methods
+        public void StartScanStopwatch()
+        {
+            scanStopwatch = new Stopwatch();
+            scanStopwatch.Start();
+
+            StartDate = DateTime.Now.ToString("yyyy") + "/" + DateTime.Now.ToString("MM") + "/" + DateTime.Now.ToString("dd");
+            StartScanTime = DateTime.Now.ToString("HH") + ":" + DateTime.Now.ToString("mm") + ":" + DateTime.Now.ToString("ss");
+        }
+
+        public void EndScanStopwatch()
+        {
+            EndScanTime = DateTime.Now.ToString("HH") + ":" + DateTime.Now.ToString("mm") + ":" + DateTime.Now.ToString("ss");
+        }
+               
+        public void GetScanTime()
+        {
+            ScanTime = scanStopwatch.Elapsed.ToString(@"m\:ss");
+        }
+
+
+        // Delay
         public void Delay(int ms)
         {
             /*
@@ -60,5 +91,9 @@ namespace FI.PlateReader.Gen4.JETI
             t.Wait(timeout);
             
         }
+
+
+
+        
     }
 }

@@ -1,0 +1,8 @@
+C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\FI.PlateReader.Gen4.JETI\bin\x64\Debug\FI.PlateReader.Gen4.JETI.exe.config
+C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\FI.PlateReader.Gen4.JETI\bin\x64\Debug\FI.PlateReader.Gen4.JETI.exe
+C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\FI.PlateReader.Gen4.JETI\bin\x64\Debug\FI.PlateReader.Gen4.JETI.pdb
+C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\FI.PlateReader.Gen4.JETI\obj\x64\Debug\FI.PlateReader.Gen4.JETI.Properties.Resources.resources
+C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\FI.PlateReader.Gen4.JETI\obj\x64\Debug\FI.PlateReader.Gen4.JETI.csproj.GenerateResource.cache
+C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\FI.PlateReader.Gen4.JETI\obj\x64\Debug\FI.PlateReader.Gen4.JETI.csproj.CoreCompileInputs.cache
+C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\FI.PlateReader.Gen4.JETI\obj\x64\Debug\FI.PlateReader.Gen4.JETI.exe
+C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\FI.PlateReader.Gen4.JETI\obj\x64\Debug\FI.PlateReader.Gen4.JETI.pdb

@@ -23,7 +23,11 @@ namespace FI.PlateReader.Gen4.JETI
         public int RowMax { get; set; }
         public int ColumnMin { get; set; }
         public int ColumnMax { get; set; }
+        public int NColumns { get; set; }
 
+        // Real Time Data & Well Image Values
+        public int Row { get; set; }
+        public int Column { get; set; }
 
         // Export Variables
         public bool[] ActiveRow { get; set; }
@@ -45,6 +49,12 @@ namespace FI.PlateReader.Gen4.JETI
 
             ColumnMin = Math.Min(ColumnSelection1, ColumnSelection2);
             ColumnMax = Math.Max(ColumnSelection1, ColumnSelection2);
+            NColumns = ColumnMax - ColumnMin + 1;
+
+            // Real time data & well image active well 
+            Row = RowMin;
+            Column = ColumnMin;
+
 
             // Compute Active Row (Rows you are going to scan in the static scan method)
             int rowCount = 0;
@@ -80,10 +90,12 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Compute the number of active wells for data export 
             ActiveWells = rowCount * columnCount;
-        }
 
 
-       
+
+
+
+        }     
 
 
     }

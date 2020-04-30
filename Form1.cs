@@ -19,12 +19,15 @@ namespace FI.PlateReader.Gen4.JETI
         // External Components
         Versa versa = new Versa();
         JETI jeti = new JETI();
+        Photodiode tia = new Photodiode();
+
         // Internal Components
         Instrument instrument = new Instrument();       // Instrument Values (UI Software)
         Microplate microplate = new Microplate();       // Microplate Dimensions
         ChartSettings charting = new ChartSettings();   // Chart Settings 
         PlateSetup plateSetup = new PlateSetup();       // Well Selection
         Time time = new Time();                         // Clock
+        WellImage image = new WellImage();          // Microplate Well Image
 
         // Data
         Settings settings = new Settings();             // Initial Instrument Settings (Configuration Files)
@@ -35,7 +38,7 @@ namespace FI.PlateReader.Gen4.JETI
 
         // Delegates
         delegate void voidDelegate();
-        delegate void intDelegate(int value1, int value2);
+        delegate void intDelegate(int value1, int value2, int value3);
 
         // Cancellation Token Source
         CancellationTokenSource tokenSourceScan;
@@ -57,13 +60,18 @@ namespace FI.PlateReader.Gen4.JETI
         public void StartForm()
         {
             // Read Config Files
-            ReadConfigFiles();
+            bool state = ReadConfigFiles();
+
+            if (!state)
+            {
+                MessageBox.Show("Failed to read data from instrument!","Error");
+            }
 
             // Create Variables (Microplates, Charts, Form Labels)            
-            instrument.InitialValues(versa.info.WavelengthStart, versa.info.WavelengthEnd);
+            instrument.InitialValues();
 
             // Microplate
-            microplate.CreatePlates(versa.info.RowDirection, versa.info.ColumnDirection, versa.info.RowOffset, versa.info.ColumnOffset);
+            microplate.CreatePlates();
 
             // Create Charts
             charting.CreateChartSettings();
@@ -77,42 +85,8 @@ namespace FI.PlateReader.Gen4.JETI
             Task.Factory.StartNew(() => LabelTask(token), token);
 
             // Connect to Instrument
-            if (Connect())
+            if (Connect() && state)
             {
-                // Pass the user data information to external classes
-                settings.info = versa.info;
-
-                // Find Start Pixel for Wavelength Start
-                for (int i = 0; i < jeti.Npixels; i++)
-                {
-                    if (jeti.wavelength[i] > info.WavelengthStart)
-                    {
-                        settings.info.PixelStart = i;
-                        break;
-                    }
-                }
-
-                // Find End Pixel for Wavelength End
-                for (int i = 0; i < jeti.Npixels; i++)
-                {
-                    if (jeti.wavelength[i] > info.WavelengthEnd)
-                    {
-                        settings.info.PixelEnd = i;
-                        break;
-                    }
-                }
-
-                //data.info = settings.info;
-                //microplate.info = settings.info;
-                //instrument.info = settings.info;
-				settings.info.Wavelength = jeti.wavelength;
-                info = settings.info;
-                jeti.info = info;
-                jeti.vs = versa;
-
-                // Microplate
-                microplate.CreatePlates(versa.info.RowDirection, versa.info.ColumnDirection, versa.info.RowOffset, versa.info.ColumnOffset);
-
                 Task.Factory.StartNew(() => InitialiseStage());
             }
             else
@@ -122,18 +96,20 @@ namespace FI.PlateReader.Gen4.JETI
 
         }
 
-        public void ReadConfigFiles()
+        public bool ReadConfigFiles()
         {
             // Read Config Files
-            settings.ReadConfigFileNew();
+            bool state = settings.ReadData();
 
-            // Pass the informatin to external classes
+            // Pass the information to external classes
             versa.info = settings.info;        
-            //data.info = settings.info;         
-            //microplate.info = settings.info;
-            //instrument.info = settings.info;
+            data.info = settings.info;         
+            microplate.info = settings.info;
+            image.info = settings.info;
+            instrument.info = settings.info;
             info = settings.info;
 
+            return state;
         }
 
         public void PopulateForm()
@@ -144,35 +120,46 @@ namespace FI.PlateReader.Gen4.JETI
 
             cboPlateFormat.SelectedIndex = 0;
 
+            // Scan Types
+            foreach (var x in instrument.ScanTypes)
+                cboScanType.Items.Add(x);
+
+            cboScanType.SelectedIndex = 0;
+
+            // # of Scans & Delay Time
+            nudScans.Enabled = false;
+            nudDelay.Enabled = false;
+
             // Leds
-            cboLed.Items.Add(info.LEDWL1.ToString() );
+            cboLed.Items.Add(info.LEDWavelength);
             cboLed.SelectedIndex = 0;
 
             // Spectrometer 
-            cboDetector.Items.Add(info.SpecName);
+            cboDetector.Items.Add(info.Detector);
             cboDetector.SelectedIndex = 0;
 
-            // LED Power
-            foreach (var x in instrument.LedPower)
-                cboLedPower.Items.Add(x);
-
-            cboLedPower.SelectedIndex = 2;
+            // LED Current
+            nudCurrent.Value = 50;
+            nudCurrent.Maximum = info.MaxCurrent;
 
             // Integration
-            foreach (var x in instrument.Integration)
-                cboIntegration.Items.Add(x);
-
-            cboIntegration.SelectedIndex = 4;
+            nudIntegration.Value = 100;
 
             // Wavelength
-            foreach (var x in instrument.Wavelength)
+            if (info.Detector == "TIA")
             {
-                cboWavelengthA.Items.Add(x);
-                cboWavelengthB.Items.Add(x);
+                groupBoxAnalysis.Visible = false;
+                nudIntegration.Visible = false;
+                label45.Visible = false;
             }
 
-            cboWavelengthA.SelectedIndex = 3;
-            cboWavelengthB.SelectedIndex = 6;
+            nudWavelengthA.Minimum = (int)instrument.WavelengthMinium;
+            nudWavelengthA.Maximum = (int)instrument.WavelengthMaximun;
+            nudWavelengthA.Value = instrument.WavelengthAValue;
+
+            nudWavelengthB.Minimum = (int)instrument.WavelengthMinium;
+            nudWavelengthB.Maximum = (int)instrument.WavelengthMaximun;
+            nudWavelengthB.Value = instrument.WavelengthBValue;
 
             // Wavelength Band
             foreach (var x in instrument.WavelengthBand)
@@ -214,8 +201,6 @@ namespace FI.PlateReader.Gen4.JETI
             }
         }
 
-
-        // Form closing events
         private void Main_FormClosing(object sender, FormClosingEventArgs e)
         {
             // Stop Updating UI Labels 
@@ -258,22 +243,61 @@ namespace FI.PlateReader.Gen4.JETI
         // Connection Methods
         public bool Connect()
         {
+            bool jconnect = true;
+            bool tconnect = true;
             // Connect to Controller
             bool vconnect = versa.Connect();
 
             // Connect to JETI
-            bool jconnect = jeti.Connect();
+            if (info.Detector == "JETI")
+            {
+                jconnect = jeti.Connect();
+                if (jconnect)
+                {
+                    // Pass the information to external classes
+                    settings.info.Wavelength = jeti.Wavelength;
+                    settings.info.NPixel = jeti.Npixels;
+                    settings.info.StartPixel = 526;
+                    settings.info.PixelLength = 412;
+                    versa.info = settings.info;
+                    data.info = settings.info;
+                    microplate.info = settings.info;
+                    image.info = settings.info;
+                    instrument.info = settings.info;
+                    info = settings.info;
+                }
+            }
 
-            return vconnect & jconnect;
+            // Connect to TIA
+            if (info.Detector == "TIA")
+            {
+                tconnect = tia.Connect();
+                if (tconnect)
+                {
+                    settings.info.Wavelength = tia.Time;
+                    settings.info.NPixel = tia.SamplePoints;
+                    settings.info.StartPixel = 0;
+                    settings.info.PixelLength = tia.SamplePoints;
+                    settings.info.WavelengthStart = 0;
+                    settings.info.WavelengthEnd = 10;
+                    versa.info = settings.info;
+                    data.info = settings.info;
+                    microplate.info = settings.info;
+                    image.info = settings.info;
+                    instrument.info = settings.info;
+                    info = settings.info;
+                }
+            }
+
+            return vconnect & jconnect & tconnect;
         }
 
         public void Disconnect()
         {
             // Disconnect from Versa
-            versa.ColumnMotorEnable(false);
-            versa.RowMotorEnable(false);
-
             versa.Disconnect();
+            jeti.Disconnect();
+            tia.Disconnect();
 
         }
 
@@ -288,7 +312,17 @@ namespace FI.PlateReader.Gen4.JETI
         private void btnStart_Click(object sender, EventArgs e)
         {
             // Prepare for Scan
-            bool status = ScanPrep();
+            bool status = VerifyConnection();
+
+            if (status)
+            {
+                // Update State
+                instrument.SetInstrumentStatus(7);
+                StateScanningPlate();
+
+                // Launch file dialog to save the data        
+                SaveDialog();
+            }
 
             if (status)
             {
@@ -296,13 +330,32 @@ namespace FI.PlateReader.Gen4.JETI
                 tokenSourceScan = new CancellationTokenSource();
                 CancellationToken token = tokenSourceScan.Token;
 
-                if (versa.info.RowScan)
+                switch (instrument.scanType)
                 {
-                    Task.Factory.StartNew(() => StaticScanRow(token), token);
-                }
-                else
-                {
-                    Task.Factory.StartNew(() => StaticScan(token), token);
+                    case 0:
+                        Task.Factory.StartNew(() => PlateScan(token), token);
+                        break;
+                    case 1:
+                        Task.Factory.StartNew(() => KineticScan(token), token);
+                        break;
+                    case 2:
+                        Task.Factory.StartNew(() => RealTimeData(token), token);
+                        break;
+                    case 3:
+                        if (info.Detector == "LineScan")
+                        {
+                            Task.Factory.StartNew(() => WellImage(token), token);
+                        }
+                        else
+                        {
+                            Task.Factory.StartNew(() => WellImageStatic(token), token);
+                        }                        
+                        break;
+                    case 4:
+                        Task.Factory.StartNew(() => LedTest(token), token);
+                        break;
+                    default:
+                        break; 
                 }
 
 
@@ -399,26 +452,24 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Get information from the Form
             int ledIndex = cboLed.SelectedIndex;
-            int powerIndex = cboLedPower.SelectedIndex;
+            versa.Current = (int)nudCurrent.Value;
 
             int detectorIndex = cboDetector.SelectedIndex;
-            int integrationIndex = cboIntegration.SelectedIndex;
+            versa.Integration = (double)nudIntegration.Value;
 
-            int wavAIndex = cboWavelengthA.SelectedIndex;
+            int wavA = (int)nudWavelengthA.Value;
+            int wavB = (int)nudWavelengthB.Value;
+
             int bandAIndex = cboBandA.SelectedIndex;
-
-            int wavBIndex = cboWavelengthB.SelectedIndex;
             int bandBIndex = cboBandB.SelectedIndex;
 
-            // LED Class
-            versa.Power = instrument.LedPower[powerIndex];
-
-            // Spectrometer Class
-            versa.Integration = instrument.Integration[integrationIndex];
+            // Kinetic
+            instrument.CurrentScan = 0; 
+            instrument.NScans = (int)nudScans.Value;
+            instrument.Delay = (int)nudDelay.Value;
 
             // Data Class
-            //data.SetAnalysisParameters(versa.info.Wavelength, instrument.Wavelength[wavAIndex], instrument.Wavelength[wavBIndex], instrument.WavelengthBand[bandAIndex], instrument.WavelengthBand[bandBIndex], versa.info.WavelengthStart, versa.info.WavelengthEnd);
-            data.SetAnalysisParameters(jeti.wavelength, instrument.Wavelength[wavAIndex], instrument.Wavelength[wavBIndex], instrument.WavelengthBand[bandAIndex], instrument.WavelengthBand[bandBIndex], versa.info.WavelengthStart, versa.info.WavelengthEnd);
+            data.SetAnalysisParameters(wavA,wavB, instrument.WavelengthBand[bandAIndex], instrument.WavelengthBand[bandBIndex]);
 
             // Update Form
             cboPlotSelection.Items.Clear();
@@ -440,7 +491,110 @@ namespace FI.PlateReader.Gen4.JETI
             lbRowWellSelection.Text = "";
             lbColumnWellSelection.Text = "";
 
+            // Hard code values for well image
+            image.Row = plateSetup.Row;
+            image.Column = plateSetup.Column;
+            image.RowPixel = 40;
+            image.ColumnPixel = 40;
+            image.Wells = image.RowPixel * image.ColumnPixel;
 
+            image.CreatePlates();
+            image.SetCurrentPlate(instrument.plateType);
+
+
+        }
+
+        private void cboScanType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // Get Value of the Scan Type ComboBox
+            instrument.scanType = cboScanType.SelectedIndex;
+            instrument.plateType = cboPlateFormat.SelectedIndex;
+
+
+            // UI Settings for different scan types
+            switch (instrument.scanType)
+            {
+
+                case 0:
+                    // Plate Scan
+                    nudScans.Value = 1;
+                    nudDelay.Value = 0;
+                    nudScans.Enabled = false;
+                    nudDelay.Enabled = false;
+                    break;                   
+
+                case 1:
+                    // Kinetic Scan
+                    nudScans.Enabled = true;
+                    nudDelay.Enabled = true;
+                    nudScans.Value = 1;
+                    nudDelay.Value = 0;
+                    break;                
+
+                case 2:
+                    // RTD
+                    nudScans.Enabled = true;
+                    nudDelay.Enabled = true;
+                    nudScans.Value = 100;
+                    nudDelay.Value = 0;
+                    break;                
+
+                case 3:
+                    // Well Image
+                    nudScans.Value = 1;
+                    nudDelay.Value = 0;
+                    nudScans.Enabled = false;
+                    nudDelay.Enabled = false;
+                    break;
+
+                case 4:
+                    // Led Test
+                    nudScans.Enabled = true;
+                    nudDelay.Enabled = true;
+                    nudScans.Value = 100;
+                    nudDelay.Value = 0;
+                    break;
+
+                default:
+                    // Default Values
+                    nudScans.Value = 1;
+                    nudDelay.Value = 0;
+                    nudScans.Enabled = false;
+                    nudDelay.Enabled = false;
+                    break;
+            }
+
+
+
+            // Only paste a single well for RTD & Well Image
+            if (instrument.scanType == 2 || instrument.scanType == 3)
+            {
+                if (plateSetup.WellsSelected)
+                {
+                    // Past Well Selection Area
+                    ChartPlate_ActivePaste();
+                }
+            }
+
+            // Update data chart if well image scan type
+            if (instrument.scanType == 3)
+            {
+                charting.SetCurrentChart(instrument.plateType, 3);
+            }
+            else
+            {
+                charting.SetCurrentChart(instrument.plateType, instrument.plateType);
+            }
+
+            ResetDataCharts();
+
+
+
+        }
+
+        private void nudScans_ValueChanged(object sender, EventArgs e)
+        {
+            instrument.NScans = (int)nudScans.Value;
         }
 
 
@@ -517,117 +671,297 @@ namespace FI.PlateReader.Gen4.JETI
         }
 
 
-        // Static Scan 
-        private bool ScanPrep()
+        // Scan Types
+        private void PlateScan(CancellationToken token)
         {
-            // Verify Instrument is connected
-            if (!VerifyConnection())
-            {
-                return false;
-            }
+            // Initialise Data
+            data.InitializeData(1, microplate.plate.Wells);
 
-            // Update State
-            instrument.SetInstrumentStatus(7);
-            StateScanningPlate();
-
-            // Launch file dialog to save the data        
-            SaveDialog();
-
-            // Initialise Data Array
-            data.InitialiseData(microplate.plate.Wells, versa.info.Pixel);
-
-            // LED
-            versa.SetLedPower();
-
-            // Spectrometer
-            //versa.SetIntegrationTime();
-            int integrationIndex = cboIntegration.SelectedIndex;
-            jeti.Tint = instrument.Integration[integrationIndex];
-            return true;
-
-        }
-
-        private void StartPlate(CancellationToken token)
-        {
+            // Plate Scan Tasks
             instrument.ActiveScan = true;
+            versa.SetScanHandles();
 
-            // Stopwatch
-            time.StartTime();
+            // Start stopwatch
+            time.StartScanStopwatch();
 
             // Move to start position
-            versa.MoveReferencePosition();
+            bool error = versa.MoveReferencePosition();
 
-            // Check for stage error.
-
-            // Check Cancel
-            if (token.IsCancellationRequested)
-                return;
+            if (!error)
+            {
+                MessageBox.Show("Reference Move Error!");
+                goto EndPlate;
+            }
 
             // Background measurement
             instrument.SetInstrumentStatus(8);
-            //versa.DarkMeasurement();
-            jeti.DarkMeasurement();
+            versa.SetIntegrationTime();
 
-            // Check Cancel
-            if (token.IsCancellationRequested)
-                return;
+            switch (info.Detector)
+            {
+                case "LineScan":
+                    error = versa.DarkMeasurement();
+                    break;
+                case "JETI":
+                    jeti.Tint = (int)versa.Integration;
+                    error = jeti.DarkMeasurement();
+                    break;
+                case "TIA":
+                    error = tia.DarkMeasurement();
+                    break;
+            }
+
+            if (!error)
+            {
+                MessageBox.Show("Error acquiring dark measurement!");
+                goto EndPlate;
+            }
+
+            // Turn on light source
+            versa.SetLedCurrent();
+            versa.LedOn();
 
             // Stop Btn
             EnableStopBtn();
 
+            // Update Instrument Status (Scanning Microplate)
             instrument.SetInstrumentStatus(9);
+
+            // Measure microplate (token, scan)
+            if (info.RowScan) { error = MeasurePlate(token, 0); }
+            else { error = MeasurePlateStatic(token, 0); }
+            
+
+            // End Plate Tasks
+            EndPlate:
+
+            // Turn off Light Source
+            versa.LedOff();
+
+            // End Timer
+            time.EndScanStopwatch();
+            
+            // Save Data
+            data.SetData();
+            SavePlate(0);
+
+            // End Plate Tasks
+            if (error)
+            {
+                // Move Back to Reference Position
+                versa.MoveReferencePosition();
+
+                // Instrument State
+                StateDeviceActive();
+                EnableSaveBtn();
+                instrument.ActiveScan = false;
+
+                // Update UI Label
+                if (tokenSourceScan.IsCancellationRequested)
+                {
+                    // Scan Cancelled
+                    instrument.SetInstrumentStatus(22);
+                }
+                else
+                {
+                    // Scan finishes sucessfully
+                    instrument.SetInstrumentStatus(21);
+                }
+
+            }
+            else
+            {
+                StateError();
+            }
 
         }
 
-        private void StaticScanRow(CancellationToken token)
+        private void KineticScan(CancellationToken token)
         {
-            bool row_check = true;
-            bool col_check = true;
-            bool scan_check = true;
+            // Variables
+            int scans = instrument.NScans;
+            int delay = instrument.Delay;
+            bool error;
 
-            if (versa.RowError || versa.ColumnError)
-            {
-                MessageBox.Show("XY Stage Error! Restart Instrument and Software");
-                return;
-            }
+            // Initialise Data
+            data.InitializeData(scans, microplate.plate.Wells);
 
-            // Plate Start Tasks
-            StartPlate(token);
-
-            int row = microplate.plate.Row;
-            int column = microplate.plate.Column;
-
+            // Plate Scan Tasks
+            instrument.ActiveScan = true;
             versa.SetScanHandles();
 
-            // Get number of active columns, start and ending indices. 
-            int active = 0;
-            int first = 0;
-            int last = 0;
-            for (int j = 0; j < column; j++)
+            // Start stopwatch
+            time.StartScanStopwatch();
+
+            // Move to start position
+            error = versa.MoveReferencePosition();
+
+            if (!error)
             {
-                if (plateSetup.ActiveColumn[j])
+                MessageBox.Show("Reference Move Error!");
+                goto EndPlate;
+            }
+
+            // Background measurement
+            instrument.SetInstrumentStatus(8);
+            versa.SetIntegrationTime();
+
+            switch (info.Detector)
+            {
+                case "LineScan":
+                    error = versa.DarkMeasurement();
+                    break;
+                case "JETI":
+                    jeti.Tint = (int)versa.Integration;
+                    error = jeti.DarkMeasurement();
+                    break;
+                case "TIA":
+                    error = tia.DarkMeasurement();
+                    break;
+            }
+
+            if (!error)
+            {
+                MessageBox.Show("Error acquiring dark measurement!");
+                goto EndPlate;
+            }
+
+            if (!error)
+            {
+                MessageBox.Show("Error acquiring dark measurement!");
+                goto EndPlate;
+            }
+
+            // Turn on light source
+            versa.SetLedCurrent();
+            versa.LedOn();
+
+            // Stop Btn
+            EnableStopBtn();
+
+            // Kinetic Scan Loop
+            for(int i = 0; i < scans; i++)
+            {
+                // Check Cancel
+                if (token.IsCancellationRequested)
+                    break;
+
+                // Update Instrument Status (Scanning Microplate)
+                instrument.SetInstrumentStatus(9);
+
+                // Set Current Scan
+                instrument.CurrentScan = i;
+
+                // Measure microplate (token, scan)
+                if (info.RowScan) { error = MeasurePlate(token, i); }
+                else { error = MeasurePlateStatic(token, i); }
+
+                if (!error)
                 {
-                    if (active == 0) { first = j; }
-                    else { last = j; }
-                    active++;
+                    MessageBox.Show("Measure Plate Error!");
+                    goto EndPlate;
+                }
+
+                // Save Data
+                SavePlate(i);
+
+                // Move back to reference position
+                error = versa.MoveReferencePosition();
+
+                if (!error)
+                {
+                    MessageBox.Show("Reference Move Error!");
+                    goto EndPlate;
+                }
+                
+                // Delay between Scans
+                if(delay > 0 && i < scans - 1)
+                {
+                    for(int d = 0; d < delay; d++)
+                    {
+                        time.Delay(1000);
+                        time.GetScanTime();
+
+                        // Update UI Label
+                        instrument.InstrumentStatus = "Delaying for " + (delay - d - 1).ToString() + " seconds";
+
+                        // Check Cancel
+                        if (token.IsCancellationRequested)
+                            break;
+                    }
+                }
+                else
+                {
+                    time.Delay(300);
                 }
             }
 
-            // get starting and ending positions.
-            double columnStart;
-            double columnEnd;
-            columnStart = microplate.motor.ColumnPosition[first];   // - microplate.info.ColumnDirection * microplate.plate.ColumnSpacing;
-            columnEnd = microplate.motor.ColumnPosition[last];  // + microplate.info.ColumnDirection * microplate.plate.ColumnSpacing;
 
-            // Turn Led On
-            if (!versa.info.LEDControl) { versa.LedOn(); }
-            
+            // End Plate Tasks
+            EndPlate:
+
+            // Turn off Light Source
+            versa.LedOff();
+
+            // End Timer
+            time.EndScanStopwatch();
+
+            // Save Data
+            data.SetData();
+            SaveScan();
+
+            // End Plate Tasks
+            if (error)
+            {
+                // Move Back to Reference Position
+                versa.MoveReferencePosition();
+
+                // Instrument State
+                StateDeviceActive();
+                EnableSaveBtn();
+                instrument.ActiveScan = false;
+
+                // Update UI Label
+                if (tokenSourceScan.IsCancellationRequested)
+                {
+                    // Scan Cancelled
+                    instrument.SetInstrumentStatus(22);
+                }
+                else
+                {
+                    // Scan finishes sucessfully
+                    instrument.SetInstrumentStatus(21);
+                }
+
+            }
+            else
+            {
+                StateError();
+            }
+
+        }
+
+        private bool MeasurePlate(CancellationToken token, int currentScan)
+        {
+            // Set the Start Time
+            time.StartPlateStopwatch();
+
+            // Variables
+            int row = microplate.plate.Row;
+            int startColumn = plateSetup.ColumnMin;
+            int endColumn = plateSetup.ColumnMax;
+            int nColumns = plateSetup.NColumns;
+
+            double startColumnPosition = microplate.motor.ColumnPosition[startColumn];
+            double endColumnPosition = microplate.motor.ColumnPosition[endColumn];
+
+            bool error = true; 
 
             // # of Rows
             for (int i = 0; i < row; i++)
             {
                 // Check Cancel
-                if ((token.IsCancellationRequested) || (!col_check) || (!row_check) || (!scan_check))
+                if (token.IsCancellationRequested)
                     break;
 
                 // Skip inactive rows
@@ -635,178 +969,112 @@ namespace FI.PlateReader.Gen4.JETI
                     continue;
 
                 // Step Row
-                //versa.StepRowMotor(microplate.motor.RowPosition[i]);
-                row_check = versa.StepRowMotor(microplate.motor.RowPosition[i], versa.info.SoftwarePositionCheck);
-                if (!row_check)
+                error = versa.StepRowMotor(microplate.motor.RowPosition[i]);
+
+                if (!error)
                 {
-                    MessageBox.Show("Row Positioning Error: " + versa.RowDeltaU.ToString("F3"));
-                    return;
+                    MessageBox.Show("Row Motor Error!");
+                    break;
                 }
 
-                // Step column to start or end of scan area
+                // Step column to start scan position
                 if (i % 2 == 0)
                 {
-                    // Step column
-                    //versa.StepColumnMotor(microplate.motor.ColumnPosition[columnIndex]);
-                    col_check = versa.StepColumnMotor(columnStart, versa.info.SoftwarePositionCheck);                    
-                    if (!col_check)
-                    {
-                        MessageBox.Show("Column Positioning Error: " + versa.ColumnDeltaU.ToString("F3"));
-                        break;
-                    }
-                    versa.SetScanParameters(0, -microplate.plate.ColumnSpacing, 0, active);
+                    // Even Row (A,C,E...)
+                    error = versa.StepColumnMotor(startColumnPosition);
+                    versa.SetScanParameters(0, -microplate.plate.ColumnSpacing, 0, nColumns);
                 }
                 else
                 {
-                    // Step column
-                    //versa.StepColumnMotor(microplate.motor.ColumnPosition[columnIndex]);
-                    col_check = versa.StepColumnMotor(columnEnd, versa.info.SoftwarePositionCheck);
-                    if (!col_check)
-                    {
-                        MessageBox.Show("Column Positioning Error: " + versa.ColumnDeltaU.ToString("F3"));
-                        break;
-                    }
-                    versa.SetScanParameters(0, microplate.plate.ColumnSpacing, 0, active);
+                    // Odd Row (B,D,F...)
+                    error = versa.StepColumnMotor(endColumnPosition);
+                    versa.SetScanParameters(0, microplate.plate.ColumnSpacing, 0, nColumns);
                 }
 
-                // Start stop-and-go measurement
-                versa.StartScanMeasurement(versa.info.LEDControl);
-
-                // # of Columns
-                for (int j = 0; j < active; j++)
+                // Check Column Motor Error
+                if (!error)
                 {
-                    //// Check Cancel
-                    //if (token.IsCancellationRequested)
-                    //    break;
+                    MessageBox.Show("Column Motor Error!");
+                    break;
+                }
 
+                // Start stop-and-go measurement (Hardware Control)
+                error = versa.StartScanMeasurement();
+
+                if (!error)
+                {
+                    MessageBox.Show("Scan Error!");
+                    break;
+                }
+
+                // Retrieve the data from the scan
+                for (int j = 0; j < nColumns; j++)
+                {
                     // Even or Odd Row
                     int columnIndex;
 
                     if (i % 2 == 0)
                     {
                         // Even Row (A,C,E...)
-                        columnIndex = first + j;
+                        columnIndex = startColumn + j;
                     }
                     else
                     {
                         // Odd Row (B,D,F...)
-                        columnIndex = last - j;
+                        columnIndex = endColumn - j;
                     }
 
-                    // Measurement
-                    scan_check = StaticRowMeasurement(i, columnIndex, j);
-                    if (!scan_check) { break; }
+                    // Update Clock
+                    time.GetPlateTime();
+                    time.GetScanTime();
 
+                    // Well Index
+                    int column = microplate.plate.Column;
+                    int index = (i * column) + columnIndex;
+
+                    // Get and Set Results
+                    versa.GetScanResults(j);
+
+                    data.SetResult(currentScan, index, microplate.plate.Wells, versa.Waveform);
+
+                    // Plot Data  
+                    UpdateDataChart(currentScan, i, columnIndex);
                 }
+
+                // Wait for scam measurement to finish
                 versa.EndScanMeasurement();
 
             }
 
-            EndPlate();
+            // End Time
+            time.EndPlateStopwatch();
 
-            // Turn Led Off
-            if (!versa.info.LEDControl) { versa.LedOff(); }
-
-
+            return error; 
+        
         }
 
-        private bool StaticRowMeasurement(int row, int columnIndex, int scanIndex)
+        private bool MeasurePlateStatic(CancellationToken token, int currentScan)
         {
-            // Update Clock
-            time.GetTime();
+            // Set the Start Time
+            time.StartPlateStopwatch();
 
-            // Well Index
-            int column = microplate.plate.Column;
-            int index = (row * column) + columnIndex;
-
-            // Measurement
-            bool check = versa.ScanMeasurement(scanIndex);
-
-            if (check)
-            {
-                data.SetResult(index, versa.Waveform, versa.info.Wavelength);
-
-                // Plot Data  
-                UpdateDataChart(row, columnIndex);
-            }
-            return check;
-        }
-
-        private void EndPlate()
-        {
-            // End Timer
-            time.EndTime();
-
-            // Save Data
-            data.SetData();
-            SavePlate();
-
-            // Get LED hours and update EEPROM
-            versa.ReadDataLED();
-            versa.WriteLEDhours();
-
-            // Instrument State
-            if (versa.RowError || versa.ColumnError)
-            {
-                versa.RowMotorEnable(false);
-                versa.ColumnMotorEnable(false);
-
-                StateError();
-            }
-            else
-            {
-                // Move Back to Reference Position
-                versa.MoveReferencePosition();
-
-                StateDeviceActive();
-            }
-            
-            EnableSaveBtn();
-            instrument.ActiveScan = false;
-
-            // Update UI Label
-            if (tokenSourceScan.IsCancellationRequested)
-            {
-                instrument.SetInstrumentStatus(22);
-                return;
-            }
-
-            if (versa.RowError || versa.ColumnError)
-            {
-                instrument.SetInstrumentStatus(20);
-            }
-            else
-            {
-                instrument.SetInstrumentStatus(21);
-            }
-        }
-
-
-        // JUNK
-        private void StaticScan(CancellationToken token)
-        {
-            bool row_check = true;
-            bool col_check = true;
-
-            if (versa.RowError || versa.ColumnError)
-            {
-                MessageBox.Show("XY Stage Error! Restart Instrument and Software");
-                return;
-            }
-
-            // Plate Start Tasks
-            StartPlate(token);
-
+            // Variables
             int row = microplate.plate.Row;
             int column = microplate.plate.Column;
+            int startColumn = plateSetup.ColumnMin;
+            int endColumn = plateSetup.ColumnMax;
+            int nColumns = plateSetup.NColumns;
 
-            if (!versa.info.LEDControl) { versa.LedOn(); }
+            double startColumnPosition = microplate.motor.ColumnPosition[startColumn];
+            double endColumnPosition = microplate.motor.ColumnPosition[endColumn];
+
+            bool error = true;
 
             // # of Rows
             for (int i = 0; i < row; i++)
             {
                 // Check Cancel
-                if ((token.IsCancellationRequested) || (!col_check))
+                if (token.IsCancellationRequested)
                     break;
 
                 // Skip inactive rows
@@ -814,21 +1082,47 @@ namespace FI.PlateReader.Gen4.JETI
                     continue;
 
                 // Step Row
-                //versa.StepRowMotor(microplate.motor.RowPosition[i]);
-                row_check = versa.StepRowMotor(microplate.motor.RowPosition[i], versa.info.SoftwarePositionCheck);
-                if (!row_check)
+                error = versa.StepRowMotor(microplate.motor.RowPosition[i]);
+
+                if (!error)
                 {
-                    MessageBox.Show("Row Positioning Error: " + versa.RowDeltaU.ToString("F3"));
+                    MessageBox.Show("Row Motor Error!");
                     break;
                 }
 
-                // # of Columns
+                //// Step column to start scan position
+                //if (i % 2 == 0)
+                //{
+                //    // Even Row (A,C,E...)
+                //    error = versa.StepColumnMotor(startColumnPosition);
+                //    versa.SetScanParameters(0, -microplate.plate.ColumnSpacing, 0, nColumns);
+                //}
+                //else
+                //{
+                //    // Odd Row (B,D,F...)
+                //    error = versa.StepColumnMotor(endColumnPosition);
+                //    versa.SetScanParameters(0, microplate.plate.ColumnSpacing, 0, nColumns);
+                //}
+
+                //// Check Column Motor Error
+                //if (!error)
+                //{
+                //    MessageBox.Show("Column Motor Error!");
+                //    break;
+                //}
+
+                // Start stop-and-go measurement (Hardware Control)
+                //error = versa.StartScanMeasurement();
+
+                //if (!error)
+                //{
+                //    MessageBox.Show("Scan Error!");
+                //    break;
+                //}
+
+                // Retrieve the data from the scan
                 for (int j = 0; j < column; j++)
                 {
-                    // Check Cancel
-                    if (token.IsCancellationRequested)
-                        break;
-
                     // Even or Odd Row
                     int columnIndex;
 
@@ -847,43 +1141,762 @@ namespace FI.PlateReader.Gen4.JETI
                     if (!plateSetup.ActiveColumn[columnIndex])
                         continue;
 
-                    // Step column
-                    //versa.StepColumnMotor(microplate.motor.ColumnPosition[columnIndex]);
-                    col_check = versa.StepColumnMotor(microplate.motor.ColumnPosition[columnIndex], versa.info.SoftwarePositionCheck);
-                    if (!col_check)
+                    // Step Row
+                    error = versa.StepColumnMotor(microplate.motor.ColumnPosition[columnIndex]);
+
+                    if (!error)
                     {
-                        MessageBox.Show("Column Positioning Error: " + versa.ColumnDeltaU.ToString("F3"));
+                        MessageBox.Show("Column Motor Error!");
                         break;
                     }
 
-                    // Measurement
-                    StaticMeasurement(i, columnIndex);
+                    // Update Clock
+                    time.GetPlateTime();
+                    time.GetScanTime();
 
+                    // Well Index                    
+                    int index = (i * column) + columnIndex;
+
+                    // Measure and set results
+                    switch (info.Detector)
+                    {
+                        case "LineScan":
+                            versa.LightMeasurement();
+                            data.SetResult(currentScan, index, microplate.plate.Wells, versa.Waveform);
+                            break;
+                        case "JETI":
+                            jeti.LightMeasurement();
+                            data.SetResult(currentScan, index, microplate.plate.Wells, jeti.Waveform);
+                            break;
+                        case "TIA":
+                            tia.LightMeasurement();
+                            data.SetResultTIA(currentScan, index, microplate.plate.Wells, tia.Waveform, tia.Waveform1, tia.Waveform2);
+                            break;
+
+                    }
+
+                    // Plot Data  
+                    UpdateDataChart(currentScan, i, columnIndex);
                 }
+
+                // Wait for scan measurement to finish
+                //versa.EndScanMeasurement();
+
             }
 
-            EndPlate();
+            // End Time
+            time.EndPlateStopwatch();
 
-            if (!versa.info.LEDControl) { versa.LedOff(); }
+            return error;
+
         }
 
-        private void StaticMeasurement(int row, int columnIndex)
+        private void RealTimeData(CancellationToken token)
         {
-            // Update Clock
-            time.GetTime();
 
-            // Well Index
+            // Variables
+            int row = microplate.plate.Row;
             int column = microplate.plate.Column;
-            int index = (row * column) + columnIndex;
+            int wells = microplate.plate.Wells;
 
-            // Measurement
-            //versa.LightMeasurement();
-            //data.SetResult(index, versa.Waveform, versa.info.Wavelength);
-            jeti.LightMeasurement();
-            data.SetResult(index, jeti.data, jeti.wavelength);
+            int scans = instrument.NScans;
+            int delay = instrument.Delay;
 
-            // Plot Data  
-            UpdateDataChart(row, columnIndex);
+            bool error;
+
+            // Initialise Data
+            data.InitializeData(scans, wells);
+
+            // Plate Scan Tasks
+            instrument.ActiveScan = true;
+            versa.SetScanHandles();
+
+            // Start stopwatch
+            time.StartScanStopwatch();
+
+            // Move to start position
+            error = versa.MoveReferencePosition();
+
+            if (!error)
+            {
+                MessageBox.Show("Reference Move Error!");
+                goto EndPlate;
+            }
+
+            // Background measurement
+            instrument.SetInstrumentStatus(8);
+            versa.SetIntegrationTime();
+
+            switch (info.Detector)
+            {
+                case "LineScan":
+                    error = versa.DarkMeasurement();
+                    break;
+                case "JETI":
+                    jeti.Tint = (int)versa.Integration;
+                    error = jeti.DarkMeasurement();
+                    break;
+                case "TIA":
+                    error = tia.DarkMeasurement();
+                    break;
+            }
+
+            if (!error)
+            {
+                MessageBox.Show("Error acquiring dark measurement!");
+                goto EndPlate;
+            }
+
+            // Turn on light source
+            versa.SetLedCurrent();
+            versa.LedOn();
+
+            // Stop Btn
+            EnableStopBtn();
+
+            // Update Instrument Status (Scanning Microplate)
+            instrument.SetInstrumentStatus(26);
+
+            // Monitor Well
+            for(int i = 0; i < scans; i++)
+            {
+                // Check Cancel
+                if (token.IsCancellationRequested)
+                    break;
+
+                // Get the current well
+                int rowMeasurement = plateSetup.Row;
+                int columnMeasurement = plateSetup.Column;
+
+                // Set current scan
+                instrument.CurrentScan = i;
+
+                // Start plate stopwatch
+                time.StartPlateStopwatch();
+
+                // Move Row
+                versa.StepRowMotor(microplate.motor.RowPosition[rowMeasurement]);
+
+                // Move Column
+                versa.StepColumnMotor(microplate.motor.ColumnPosition[columnMeasurement]);
+
+                // Set Result
+                int index = rowMeasurement * column + columnMeasurement;
+
+                // Measure and set results
+                switch (info.Detector)
+                {
+                    case "LineScan":
+                        versa.LightMeasurement();
+                        data.SetResult(i, index, wells, versa.Waveform);
+                        break;
+                    case "JETI":
+                        jeti.LightMeasurement();
+                        data.SetResult(i, index, wells, jeti.Waveform);
+                        break;
+                    case "TIA":
+                        tia.LightMeasurement();
+                        data.SetResultTIA(i, index, wells, tia.Waveform, tia.Waveform1, tia.Waveform2);
+                        break;
+
+                }
+                //versa.LightMeasurement();
+
+                // Update Clock
+                time.GetPlateTime();
+                time.GetScanTime();
+
+                // Plot Data  
+                UpdateDataChart(i,rowMeasurement, columnMeasurement);
+
+                // Delay between Scans
+                if (delay > 0 && i < scans - 1)
+                {
+                    for (int d = 0; d < delay; d++)
+                    {
+                        time.Delay(1000);
+                        time.GetScanTime();
+
+                        // Update UI Label
+                        instrument.InstrumentStatus = "Delaying for " + (delay - d - 1).ToString() + " seconds";
+
+                        // Check Cancel
+                        if (token.IsCancellationRequested)
+                            break;
+                    }
+                }
+                else
+                {
+                    time.Delay(300);
+                }
+
+                // End Time
+                time.EndPlateStopwatch();
+
+            }
+
+            // End Plate Tasks
+            EndPlate:
+
+            // Turn off Light Source
+            versa.LedOff();
+
+            // End Timer
+            time.EndScanStopwatch();
+
+            // Save Data
+            data.SetData();
+            SaveScan();
+
+            // End Plate Tasks
+            if (error)
+            {
+                // Move Back to Reference Position
+                versa.MoveReferencePosition();
+
+                // Instrument State
+                StateDeviceActive();
+                EnableSaveBtn();
+                instrument.ActiveScan = false;
+
+                // Update UI Label
+                if (tokenSourceScan.IsCancellationRequested)
+                {
+                    // Scan Cancelled
+                    instrument.SetInstrumentStatus(22);
+                }
+                else
+                {
+                    // Scan finishes sucessfully
+                    instrument.SetInstrumentStatus(21);
+                }
+
+            }
+            else
+            {
+                StateError();
+            }
+
+
+
+
+        }
+
+        private void WellImage(CancellationToken token)
+        {
+
+            // Variables
+            bool error;
+            int row = image.RowPixel;
+            int column = image.ColumnPixel;
+            int wells = image.Wells;
+
+            double startColumnPosition = image.motor.ColumnPosition[0];
+            double endColumnPosition = image.motor.ColumnPosition[column - 1];
+
+
+            // Initialise Data
+            data.InitializeData(1, wells);
+
+            // Plate Scan Tasks
+            instrument.ActiveScan = true;
+            versa.SetScanHandles();
+
+            // Start stopwatch
+            time.StartScanStopwatch();
+
+            // Move to start position
+            error = versa.MoveReferencePosition();
+
+            if (!error)
+            {
+                MessageBox.Show("Reference Move Error!");
+                goto EndPlate;
+            }
+
+            // Background measurement
+            instrument.SetInstrumentStatus(8);
+            versa.SetIntegrationTime();
+            error = versa.DarkMeasurement();
+
+            if (!error)
+            {
+                MessageBox.Show("Error acquiring dark measurement!");
+                goto EndPlate;
+            }
+
+            // Turn on light source
+            versa.SetLedCurrent();
+            versa.LedOn();
+
+            // Stop Btn
+            EnableStopBtn();
+
+            // Update Instrument Status (Scanning Microplate)
+            instrument.SetInstrumentStatus(27);
+
+            // Start plate time
+            time.StartPlateStopwatch();
+
+            // # of Rows
+            for (int i = 0; i < row; i++)
+            {
+                // Check Cancel
+                if (token.IsCancellationRequested)
+                    break;
+
+                // Step Row
+                error = versa.StepRowMotor(image.motor.RowPosition[i]);
+
+                if (!error)
+                {
+                    MessageBox.Show("Row Motor Error!");
+                    break;
+                }
+
+                // Step column to start or end of scan area & Set Scanning Parameters
+                if (i % 2 == 0)
+                {
+                    // Even Row (A,C,E...)
+                    error = versa.StepColumnMotor(startColumnPosition);
+                    versa.SetScanParameters(0, info.ColumnDirection * image.motor.ColumnStepSize, 0, column);
+                }
+                else
+                {
+                    // Odd Row (B,D,F...)
+                    error = versa.StepColumnMotor(endColumnPosition);
+                    versa.SetScanParameters(0, -info.ColumnDirection*image.motor.ColumnStepSize, 0, column);
+                }
+
+                // Check Column Motor Error
+                if (!error)
+                {
+                    MessageBox.Show("Column Motor Error!");
+                    break;
+                }
+
+                // Start stop-and-go measurement (Hardware Control)
+                error = versa.StartScanMeasurement();
+
+                if (!error)
+                {
+                    MessageBox.Show("Scan Error!");
+                    break;
+                }
+
+                // Retrieve the data from the scan
+                for (int j = 0; j < column; j++)
+                {
+                    // Even or Odd Row
+                    int columnIndex;
+
+                    if (i % 2 == 0)
+                    {
+                        // Even Row (A,C,E...)
+                        columnIndex = j;
+                    }
+                    else
+                    {
+                        // Odd Row (B,D,F...)
+                        columnIndex = (column - 1) - j;
+                    }
+
+                    // Update Clock
+                    time.GetPlateTime();
+                    time.GetScanTime();
+
+                    // Well Index
+                    int index = (i * column) + columnIndex;
+
+                    // Get and Set Results
+                    versa.GetScanResults(j);
+
+                    data.SetResult(0, index, wells, versa.Waveform);
+
+                    // Plot Data  
+                    UpdateDataChart(0, i, columnIndex);
+
+                }
+
+                // Wait for scam measurement to finish
+                versa.EndScanMeasurement();
+
+            }
+
+            // End Time
+            time.EndPlateStopwatch();
+
+            // End Plate Tasks
+            EndPlate:
+
+            // Turn off Light Source
+            versa.LedOff();
+
+            // End Timer
+            time.EndScanStopwatch();
+
+            // Save Data
+            data.SetData();
+            SaveImage();
+
+            // End Plate Tasks
+            if (error)
+            {
+                // Move Back to Reference Position
+                versa.MoveReferencePosition();
+
+                // Instrument State
+                StateDeviceActive();
+                EnableSaveBtn();
+                instrument.ActiveScan = false;
+
+                // Update UI Label
+                if (tokenSourceScan.IsCancellationRequested)
+                {
+                    // Scan Cancelled
+                    instrument.SetInstrumentStatus(22);
+                }
+                else
+                {
+                    // Scan finishes sucessfully
+                    instrument.SetInstrumentStatus(21);
+                }
+
+            }
+            else
+            {
+                StateError();
+            }
+
+
+        }
+
+        private void WellImageStatic(CancellationToken token)
+        {
+
+            // Variables
+            bool error;
+            int row = image.RowPixel;
+            int column = image.ColumnPixel;
+            int wells = image.Wells;
+
+            double startColumnPosition = image.motor.ColumnPosition[0];
+            double endColumnPosition = image.motor.ColumnPosition[column - 1];
+
+
+            // Initialise Data
+            data.InitializeData(1, wells);
+
+            // Plate Scan Tasks
+            instrument.ActiveScan = true;
+            versa.SetScanHandles();
+
+            // Start stopwatch
+            time.StartScanStopwatch();
+
+            // Move to start position
+            error = versa.MoveReferencePosition();
+
+            if (!error)
+            {
+                MessageBox.Show("Reference Move Error!");
+                goto EndPlate;
+            }
+
+            // Background measurement
+            instrument.SetInstrumentStatus(8);
+            versa.SetIntegrationTime();
+
+            switch (info.Detector)
+            {
+                case "LineScan":
+                    error = versa.DarkMeasurement();
+                    break;
+                case "JETI":
+                    jeti.Tint = (int)versa.Integration;
+                    error = jeti.DarkMeasurement();
+                    break;
+                case "TIA":
+                    error = tia.DarkMeasurement();
+                    break;
+            }
+
+            if (!error)
+            {
+                MessageBox.Show("Error acquiring dark measurement!");
+                goto EndPlate;
+            }
+
+            // Turn on light source
+            versa.SetLedCurrent();
+            versa.LedOn();
+
+            // Stop Btn
+            EnableStopBtn();
+
+            // Update Instrument Status (Scanning Microplate)
+            instrument.SetInstrumentStatus(27);
+
+            // Start plate time
+            time.StartPlateStopwatch();
+
+            // # of Rows
+            // # of Rows
+            for (int i = 0; i < row; i++)
+            {
+                // Check Cancel
+                if (token.IsCancellationRequested)
+                    break;
+
+                // Step Row
+                error = versa.StepRowMotor(image.motor.RowPosition[i]);
+
+                if (!error)
+                {
+                    MessageBox.Show("Row Motor Error!");
+                    break;
+                }
+
+                //// Step column to start scan position
+                //if (i % 2 == 0)
+                //{
+                //    // Even Row (A,C,E...)
+                //    error = versa.StepColumnMotor(startColumnPosition);
+                //    versa.SetScanParameters(0, -microplate.plate.ColumnSpacing, 0, nColumns);
+                //}
+                //else
+                //{
+                //    // Odd Row (B,D,F...)
+                //    error = versa.StepColumnMotor(endColumnPosition);
+                //    versa.SetScanParameters(0, microplate.plate.ColumnSpacing, 0, nColumns);
+                //}
+
+                //// Check Column Motor Error
+                //if (!error)
+                //{
+                //    MessageBox.Show("Column Motor Error!");
+                //    break;
+                //}
+
+                // Start stop-and-go measurement (Hardware Control)
+                //error = versa.StartScanMeasurement();
+
+                //if (!error)
+                //{
+                //    MessageBox.Show("Scan Error!");
+                //    break;
+                //}
+
+                // Retrieve the data from the scan
+                for (int j = 0; j < column; j++)
+                {
+                    // Even or Odd Row
+                    int columnIndex;
+
+                    if (i % 2 == 0)
+                    {
+                        // Even Row (A,C,E...)
+                        columnIndex = j;
+                    }
+                    else
+                    {
+                        // Odd Row (B,D,F...)
+                        columnIndex = (column - 1) - j;
+                    }
+
+                    // Step Row
+                    error = versa.StepColumnMotor(image.motor.ColumnPosition[columnIndex]);
+
+                    if (!error)
+                    {
+                        MessageBox.Show("Column Motor Error!");
+                        break;
+                    }
+
+                    // Update Clock
+                    time.GetPlateTime();
+                    time.GetScanTime();
+
+                    // Well Index                    
+                    int index = (i * column) + columnIndex;
+
+                    // Measure and set results
+                    switch (info.Detector)
+                    {
+                        case "LineScan":
+                            versa.LightMeasurement();
+                            data.SetResult(0, index, wells, versa.Waveform);
+                            break;
+                        case "JETI":
+                            jeti.LightMeasurement();
+                            data.SetResult(0, index, wells, jeti.Waveform);
+                            break;
+                        case "TIA":
+                            tia.LightMeasurement();
+                            data.SetResultTIA(0, index, wells, tia.Waveform, tia.Waveform1, tia.Waveform2);
+                            break;
+
+                    }
+
+                    // Plot Data  
+                    UpdateDataChart(0, i, columnIndex);
+                }
+
+            }
+
+            // End Time
+            time.EndPlateStopwatch();
+
+        // End Plate Tasks
+        EndPlate:
+
+            // Turn off Light Source
+            versa.LedOff();
+
+            // End Timer
+            time.EndScanStopwatch();
+
+            // Save Data
+            data.SetData();
+            SaveImage();
+
+            // End Plate Tasks
+            if (error)
+            {
+                // Move Back to Reference Position
+                versa.MoveReferencePosition();
+
+                // Instrument State
+                StateDeviceActive();
+                EnableSaveBtn();
+                instrument.ActiveScan = false;
+
+                // Update UI Label
+                if (tokenSourceScan.IsCancellationRequested)
+                {
+                    // Scan Cancelled
+                    instrument.SetInstrumentStatus(22);
+                }
+                else
+                {
+                    // Scan finishes sucessfully
+                    instrument.SetInstrumentStatus(21);
+                }
+
+            }
+            else
+            {
+                StateError();
+            }
+
+
+        }
+
+        private void LedTest(CancellationToken token)
+        {
+
+
+            // Variables
+            int scans = instrument.NScans;
+            int delay = instrument.Delay;
+
+            bool error = true;
+
+            // Plate Scan Tasks
+            instrument.ActiveScan = true;
+            time.StartScanStopwatch();
+
+            // Turn on light source
+            versa.SetLedCurrent();
+            versa.LedOn();
+
+            // Stop Btn
+            EnableStopBtn();
+
+            // Update Instrument Status (Scanning Microplate)
+            instrument.SetInstrumentStatus(28);
+
+            // Monitor Well
+            for (int i = 0; i < scans; i++)
+            {
+                // Check Cancel
+                if (token.IsCancellationRequested)
+                    break;
+
+                // Set current scan
+                instrument.CurrentScan = i;
+
+                // Start plate stopwatch
+                time.StartPlateStopwatch();
+
+                // Update Clock
+                time.GetPlateTime();
+                time.GetScanTime();
+
+                // Delay between Scans
+                if (delay > 0 && i < scans - 1)
+                {
+                    for (int d = 0; d < delay; d++)
+                    {
+                        time.Delay(1000);
+                        time.GetScanTime();
+
+                        // Update UI Label
+                        instrument.InstrumentStatus = "Delaying for " + (delay - d - 1).ToString() + " seconds";
+
+                        // Check Cancel
+                        if (token.IsCancellationRequested)
+                            break;
+                    }
+                }
+                else
+                {
+                    time.Delay(300);
+                }
+
+                // End Time
+                time.EndPlateStopwatch();
+
+            }
+
+            // EndPlate:
+
+            // Turn off Light Source
+            versa.LedOff();
+
+            // End Timer
+            time.EndScanStopwatch();
+
+            // End Plate Tasks
+            if (error)
+            {
+                // Move Back to Reference Position
+                versa.MoveReferencePosition();
+
+                // Instrument State
+                StateDeviceActive();
+                EnableSaveBtn();
+                instrument.ActiveScan = false;
+
+                // Update UI Label
+                if (tokenSourceScan.IsCancellationRequested)
+                {
+                    // Scan Cancelled
+                    instrument.SetInstrumentStatus(22);
+                }
+                else
+                {
+                    // Scan finishes sucessfully
+                    instrument.SetInstrumentStatus(21);
+                }
+
+            }
+            else
+            {
+                StateError();
+            }
+
+
 
         }
 
@@ -891,10 +1904,43 @@ namespace FI.PlateReader.Gen4.JETI
         // Save 
         private void btnSaveData_Click(object sender, EventArgs e)
         {
+
             // Try to save the data
             SaveDialog();
-            SavePlate();
 
+
+            switch (instrument.scanType)
+            {
+                case 0:
+                    SavePlateMethod();
+                    break;
+                case 1:
+                    SavePlateMethod();
+                    SaveScan();
+                    break;
+                case 2:
+                    SaveScan();
+                    break;
+                case 3:
+                    SaveImage();
+                    break;
+                case 4:
+                    return;
+                default:
+                    break;
+            }
+
+            // Save Methods
+            void SavePlateMethod()
+            {
+                for (int i = 0; i < instrument.NScans; i++)
+                {
+                    SavePlate(i);
+                }
+            }           
+            
+
+            // Give user confirmation of save
             if (dataExport.Save)
             {
                 MessageBox.Show("Data Saved!", "Information");
@@ -920,58 +1966,140 @@ namespace FI.PlateReader.Gen4.JETI
             }
         }
 
-        private void SavePlate()
+        private void SavePlate(int scan)
         {
-            if (dataExport.Save)
-            {
-                // Prepare data export for Save
-                PrepareSave();
+            // Settings
+            dataExport.info = info;
 
-                // Save Data                
-                dataExport.SavePlate();
-            }
+            // Microplate
+            dataExport.plate = microplate.plate;
+            dataExport.motor = microplate.motor;
+
+            // LED
+            dataExport.LED = info.LEDWavelength.ToString();
+            dataExport.LedCurrent = versa.Current.ToString();
+
+            // Detector
+            dataExport.Detector = info.Detector;
+            dataExport.Integration = versa.Integration;
+
+            // Data Information
+            dataExport.analysisParameters = data.analysisParameters;
+            dataExport.PlateResult = data.PlateResult;
+            dataExport.block = data.block;
+
+            // Plate Setup
+            dataExport.ActiveRow = plateSetup.ActiveRow;
+            dataExport.ActiveColumn = plateSetup.ActiveColumn;
+            dataExport.Samples = plateSetup.ActiveWells;
+
+            // Time Information
+            dataExport.StartDate = time.StartDate;
+            dataExport.StartPlateTime = time.StartPlateTime;
+            dataExport.EndPlateTime = time.EndPlateTime;
+
+            dataExport.StartScanTime = time.StartScanTime;
+            dataExport.EndScanTime = time.EndScanTime;
+
+            // Scan Information
+            dataExport.CurrentScan = scan;
+            dataExport.NScans = instrument.NScans;
+            dataExport.Delay = instrument.Delay;
+
+
+            // Save Data                
+            dataExport.SavePlate(scan);
+
+            
 
         }
 
-        private void PrepareSave()
+        private void SaveScan()
         {
-            // New instance of the struct
-            dataExport.plateInfo = new DataExport.PlateInfo();
-
-            // File Information
-            dataExport.plateInfo.Filename = dataExport.Filename;
-            dataExport.plateInfo.Filepath = Path.Combine(dataExport.Filepath, dataExport.Filename);
-
             // Settings
-            dataExport.plateInfo.info = info;
+            dataExport.info = info;
 
             // Microplate
-            dataExport.plateInfo.plate = microplate.plate;
-            dataExport.plateInfo.motor = microplate.motor;
+            dataExport.plate = microplate.plate;
+            dataExport.motor = microplate.motor;
 
             // LED
-            dataExport.plateInfo.LED = info.LEDWL1.ToString();
-            dataExport.plateInfo.LedPower = versa.Power;
+            dataExport.LED = info.LEDWavelength.ToString();
+            dataExport.LedCurrent = versa.Current.ToString();
 
             // Detector
-            dataExport.plateInfo.Detector = info.SpecName;
-            dataExport.plateInfo.Integration = versa.Integration;
+            dataExport.Detector = info.Detector;
+            dataExport.Integration = versa.Integration;
 
             // Data Information
-            dataExport.plateInfo.analysisParameters = data.analysisParameters;
-            dataExport.plateInfo.PlateResult = data.PlateResult;
-            dataExport.plateInfo.block = data.block;
+            dataExport.analysisParameters = data.analysisParameters;
+            dataExport.PlateResult = data.PlateResult;
+            dataExport.block = data.block;
 
             // Plate Setup
-            dataExport.plateInfo.ActiveRow = plateSetup.ActiveRow;
-            dataExport.plateInfo.ActiveColumn = plateSetup.ActiveColumn;
-            dataExport.plateInfo.Samples = plateSetup.ActiveWells;
+            dataExport.ActiveRow = plateSetup.ActiveRow;
+            dataExport.ActiveColumn = plateSetup.ActiveColumn;
+            dataExport.Samples = plateSetup.ActiveWells;
 
             // Time Information
-            dataExport.plateInfo.StartDate = time.StartDate;
-            dataExport.plateInfo.StartPlateTime = time.StartPlateTime;
-            dataExport.plateInfo.EndPlateTime = time.EndPlateTime;
+            dataExport.StartDate = time.StartDate;
+            dataExport.StartPlateTime = time.StartPlateTime;
+            dataExport.EndPlateTime = time.EndPlateTime;
 
+            dataExport.StartScanTime = time.StartScanTime;
+            dataExport.EndScanTime = time.EndScanTime;
+
+            // Scan Information
+            dataExport.NScans = instrument.NScans;
+            dataExport.Delay = instrument.Delay;
+
+
+            // Save Data                
+            dataExport.SaveScan();
+
+            
+        }
+
+        private void SaveImage()
+        {
+            // Settings
+            dataExport.info = info;
+
+            // Microplate
+            dataExport.plate = microplate.plate;
+            dataExport.motor = microplate.motor;
+
+            // LED
+            dataExport.LED = info.LEDWavelength.ToString();
+            dataExport.LedCurrent = versa.Current.ToString();
+
+            // Detector
+            dataExport.Detector = info.Detector;
+            dataExport.Integration = versa.Integration;
+
+            // Data Information
+            dataExport.analysisParameters = data.analysisParameters;
+            dataExport.PlateResult = data.PlateResult;
+            dataExport.block = data.block;
+
+            // Time Information
+            dataExport.StartDate = time.StartDate;
+            dataExport.StartPlateTime = time.StartPlateTime;
+            dataExport.EndPlateTime = time.EndPlateTime;
+
+            dataExport.StartScanTime = time.StartScanTime;
+            dataExport.EndScanTime = time.EndScanTime;
+
+            // Well Image
+            dataExport.iMotor = image.motor;
+            dataExport.iPlate = image.plate;
+            dataExport.RowPixel = image.RowPixel;
+            dataExport.ColumnPixel = image.ColumnPixel;
+            dataExport.Samples = image.Wells;
+
+            // Save Data
+            string wellName = dataExport.ConvertRow(plateSetup.RowMin) + (plateSetup.ColumnMin + 1).ToString();
+            dataExport.SaveImage(wellName);
         }
 
 
@@ -986,7 +2114,7 @@ namespace FI.PlateReader.Gen4.JETI
             else
             {
                 ((Control)this.tabAssayProtocol).Enabled = false;
-                ((Control)this.tabResults).Enabled = false;
+                ((Control)this.tabMeasure).Enabled = false;
 
                 DisableButtons();
 
@@ -1104,8 +2232,8 @@ namespace FI.PlateReader.Gen4.JETI
                 btnResetProtocol.Enabled = true;
 
                 // Enable Tab Results
-                ((Control)this.tabResults).Enabled = true;
-                tabControl.SelectedTab = tabResults;
+                ((Control)this.tabMeasure).Enabled = true;
+                tabControl.SelectedTab = tabMeasure;
 
             }
         }
@@ -1142,35 +2270,51 @@ namespace FI.PlateReader.Gen4.JETI
             {
                 // Disable Buttons
                 DisableButtons();
-                tabControl.SelectedTab = tabResults;
+                tabControl.SelectedTab = tabMeasure;
             }
         }
 
 
         // Thread Safe: Charts, Labels
-        private void UpdateDataChart(int row, int columnIndex)
+        private void UpdateDataChart(int scan, int row, int columnIndex)
         {
             if (chartResultMap.InvokeRequired)
             {
                 intDelegate d = new intDelegate(UpdateDataChart);
-                Invoke(d, new object[] { row, columnIndex });
+                Invoke(d, new object[] { scan, row, columnIndex });
             }
             else
             {
-                // Microplate Heat Map Chart
+                // Variables
                 int value = cboPlotSelection.SelectedIndex;
+                string wellName = dataExport.ConvertRow(row) + (columnIndex + 1).ToString();
+                int index;
+                int wells;
 
-                charting.FindHeatMapColors(value, data.block.Data[value]);
-                ChartResultMap_ActivePaste();
+                charting.FindHeatMapColors(value, data.block.Data[scan][value]);
+
+                // Well Image == 3, Other plots 
+                if(instrument.scanType == 3)
+                {
+                    ChartResultMap_ImagePaste();
+                    index = (row * image.ColumnPixel) + columnIndex;
+                    wells = image.Wells;
+                }
+                else
+                {
+                    ChartResultMap_ActivePaste();
+                    index = (row * microplate.plate.Column) + columnIndex;
+                    wells = microplate.plate.Wells;
+                }
+
 
                 // Waveform Chart
-                int column = microplate.plate.Column;
-                int index = (row * column) + columnIndex;
-
                 if (index >= 0)
                 {
+                    index = (scan * wells) + index;
+
                     ChartResultMap_MarkerPaste(row, columnIndex);
-                    WaveformChart_ActivePaste(row, columnIndex);
+                    WaveformChart_ActivePaste(index, wellName);
                 }
 
             }
@@ -1188,21 +2332,25 @@ namespace FI.PlateReader.Gen4.JETI
                 // Status Label
                 labelStatus.Text = instrument.InstrumentStatus;
 
+                // Scan Type
+                labelCurrentScan.Text = (instrument.CurrentScan + 1).ToString();
+                labelTotalScans.Text = instrument.NScans.ToString();                
+
                 // Clock
                 labelClock.Text = time.PlateTime;
-
-                // LED hours.
-                TimeSpan led_sec = TimeSpan.FromSeconds(versa.ledData.hours[0] * 3600);
-                labelLEDhours.Text = led_sec.ToString("hh':'mm':'ss");
+                labelPlateTime.Text = time.PlateTime;
+                labelScanTime.Text = time.ScanTime;
 
                 // Heat Map Chart
                 lbLegendMin.Text = charting.MinLabel;
                 lbLegendMax.Text = charting.MaxLabel;
 
+                // Row and Column Offset position (Well Image)
+                labelRowOffset.Text = instrument.rowOffset;
+                labelColumnOffset.Text = instrument.columnOffset;
+
                 // Update
                 toolStrip.Update();
-                statusStrip.Update();
-
                 lbLegendMin.Update();
                 lbLegendMax.Update();
 
@@ -1239,11 +2387,6 @@ namespace FI.PlateReader.Gen4.JETI
         }
 
 
-        /// <summary>
-        /// Charting Methods
-        /// </summary>
-        /// 
-
         // Reset Charts
         private void ResetDataCharts()
         {
@@ -1251,6 +2394,8 @@ namespace FI.PlateReader.Gen4.JETI
             // Reset Data, buttons, wells selected
             data.ResetData();
 
+            instrument.Autoscale = true;
+            btnAutoscale.Text = "AutoScale On";
 
             // Reset Heat Map combo box
             cboPlotSelection.Items.Clear();
@@ -1271,7 +2416,11 @@ namespace FI.PlateReader.Gen4.JETI
             WaveformChart_NullPaste();
 
             // Reset Label Variables
-            time.PlateTime = "";
+            time.PlateTime = "0:00";
+            time.ScanTime = "0:00";
+
+            instrument.CurrentScan = 0;
+            instrument.NScans = 1;
 
             charting.MinLabel = "";
             charting.MaxLabel = "";
@@ -1287,15 +2436,27 @@ namespace FI.PlateReader.Gen4.JETI
 
         }
 
+
         // Microplate Well Selection Chart
         private void cboPlateFormat_SelectedIndexChanged(object sender, EventArgs e)
         {
             // Get Value of the plateformat ComboBox
-            int value = cboPlateFormat.SelectedIndex;
+            instrument.plateType = cboPlateFormat.SelectedIndex;
+            instrument.scanType = cboScanType.SelectedIndex;
+
+            // Get value of scan mode
+            int scanType = cboScanType.SelectedIndex;
+            int plot = instrument.plateType;
+
+            // Well Image has a different plot parameter
+            if (scanType == 3)
+            {
+                plot = 3;
+            }
 
             // Update Current Microplate (Microplate and Charting)
-            microplate.SetCurrentPlate(value);
-            charting.SetCurrentChart(value);
+            microplate.SetCurrentPlate(instrument.plateType);
+            charting.SetCurrentChart(instrument.plateType, plot);
 
             // Reset Charts
             ResetDataCharts();
@@ -1451,6 +2612,23 @@ namespace FI.PlateReader.Gen4.JETI
             int row = charting.chartParameters.row;
             int column = charting.chartParameters.column;
             int markerSize = charting.chartParameters.wsMarkerSize;
+
+            // Get Scan Type
+            int value = cboScanType.SelectedIndex;
+
+            if(value > 1)
+            {
+                // Set Row Min = Row Max and Column Min = Column Max
+                plateSetup.RowSelection1 = plateSetup.RowMin;
+                plateSetup.RowSelection2 = plateSetup.RowMin;
+
+                plateSetup.ColumnSelection1 = plateSetup.ColumnMin;
+                plateSetup.ColumnSelection2 = plateSetup.ColumnMin;
+
+                // Set new active wells (only 1 well)
+                plateSetup.SetActiveWells(microplate.plate.Row, microplate.plate.Column);
+            }
+
 
             // Paste Values
             for (int i = 0; i < row; i++)
@@ -1630,7 +2808,7 @@ namespace FI.PlateReader.Gen4.JETI
             if (data.DataAvailable)
             {
                 // Plot Data
-                UpdateDataChart(-1, -1);
+                UpdateDataChart(instrument.CurrentScan, -1, -1);
             }
         }
 
@@ -1640,10 +2818,20 @@ namespace FI.PlateReader.Gen4.JETI
             chartResultMap.Series.Clear();
             chartResultMap.Legends.Clear();
             chartResultMap.ChartAreas.Clear();
+            
+            // Size
+            if(instrument.scanType == 3)
+            {
+                chartResultMap.Size = new Size(450, 450);
+            }
+            else
+            {
+                chartResultMap.Size = new Size(648, 415);
+            }
 
             // Row/Col
-            int row = charting.chartParameters.row;
-            int col = charting.chartParameters.column;
+            int row = charting.plotParameters.row;
+            int col = charting.plotParameters.column;
 
             // Initialize axis
             ChartArea chartArea = chartResultMap.ChartAreas.Add("chartArea");
@@ -1706,15 +2894,15 @@ namespace FI.PlateReader.Gen4.JETI
             chartArea.AxisX.Maximum = col + 0.5;
             chartArea.AxisY.Maximum = row + 0.5;
 
-            chartArea.AxisX.LabelAutoFitMinFontSize = charting.chartParameters.xFontSize;
-            chartArea.AxisY.LabelAutoFitMinFontSize = charting.chartParameters.yFontSize;
+            chartArea.AxisX.LabelAutoFitMinFontSize = charting.plotParameters.xFontSize;
+            chartArea.AxisY.LabelAutoFitMinFontSize = charting.plotParameters.yFontSize;
 
             // Row Labels
-            double temp = charting.chartParameters.rowIntervalStart;
-            int increment1 = charting.chartParameters.rowIncrement1;
-            int increment2 = charting.chartParameters.rowIncrement2;
+            double temp = charting.plotParameters.rowIntervalStart;
+            int increment1 = charting.plotParameters.rowIncrement1;
+            int increment2 = charting.plotParameters.rowIncrement2;
 
-            foreach (string rowLabel in charting.chartParameters.rowLabels)
+            foreach (string rowLabel in charting.plotParameters.rowLabels)
             {
                 customLabel = new CustomLabel(temp, temp + increment1, rowLabel, 0, LabelMarkStyle.None);
                 chartArea.AxisY.CustomLabels.Add(customLabel);
@@ -1722,11 +2910,11 @@ namespace FI.PlateReader.Gen4.JETI
             }
 
             // Column Labels
-            temp = charting.chartParameters.columnIntervalStart;
-            increment1 = charting.chartParameters.columnIncrement1;
-            increment2 = charting.chartParameters.columnIncrement2;
+            temp = charting.plotParameters.columnIntervalStart;
+            increment1 = charting.plotParameters.columnIncrement1;
+            increment2 = charting.plotParameters.columnIncrement2;
 
-            foreach (string columnLabel in charting.chartParameters.columnLabels)
+            foreach (string columnLabel in charting.plotParameters.columnLabels)
             {
                 customLabel = new CustomLabel(temp, temp + increment1, columnLabel, 0, LabelMarkStyle.None);
                 chartArea.AxisX.CustomLabels.Add(customLabel);
@@ -1814,15 +3002,15 @@ namespace FI.PlateReader.Gen4.JETI
             int pt;
 
             // Paste the Null Data
-            int row = charting.chartParameters.row;
-            int column = charting.chartParameters.column;
+            int row = charting.plotParameters.row;
+            int column = charting.plotParameters.column;
 
             for (int i = 0; i < row; i++)
                 for (int j = 0; j < column; j++)
                 {
                     pt = S1.Points.AddXY(j + 1, i + 1);
-                    S1.Points[pt].MarkerStyle = charting.chartParameters.wsMarkerStyle;
-                    S1.Points[pt].MarkerColor = charting.chartParameters.wsNullColor;
+                    S1.Points[pt].MarkerStyle = charting.plotParameters.wsMarkerStyle;
+                    S1.Points[pt].MarkerColor = charting.plotParameters.wsNullColor;
                     S1.Points[pt].MarkerSize = 0;
                 }
         }
@@ -1842,9 +3030,9 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Variables
             int pt;
-            int row = charting.chartParameters.row;
-            int column = charting.chartParameters.column;
-            int lenPlate = charting.chartParameters.wells;
+            int row = charting.plotParameters.row;
+            int column = charting.plotParameters.column;
+            int lenPlate = charting.plotParameters.wells;
 
             // Get the colors
             int[] colors = new int[lenPlate];
@@ -1859,19 +3047,64 @@ namespace FI.PlateReader.Gen4.JETI
                         // Paste Active Color
                         int index = (i * column) + j;
                         pt = S1.Points.AddXY(j + 1, i + 1);
-                        S1.Points[pt].MarkerStyle = charting.chartParameters.dataMarkerStyle;
+                        S1.Points[pt].MarkerStyle = charting.plotParameters.dataMarkerStyle;
                         S1.Points[pt].MarkerColor = Color.FromArgb(150, charting.ColorList[colors[index]]);
-                        S1.Points[pt].MarkerSize = charting.chartParameters.dataMarkerSize;
+                        S1.Points[pt].MarkerSize = charting.plotParameters.dataMarkerSize;
                     }
                     else
                     {
                         // Paste Null Color
                         pt = S1.Points.AddXY(j + 1, i + 1);
-                        S1.Points[pt].MarkerStyle = charting.chartParameters.dataMarkerStyle;
+                        S1.Points[pt].MarkerStyle = charting.plotParameters.dataMarkerStyle;
                         S1.Points[pt].MarkerColor = Color.White;
                         S1.Points[pt].MarkerSize = 0;
                     }
                 }
+
+
+
+            chartResultMap.Update();
+
+
+        }
+
+        private void ChartResultMap_ImagePaste()
+        {
+
+            // Clear All Series
+            chartResultMap.Series.Clear();
+            chartResultMap.Legends.Clear();
+
+            // Create Series
+            Series S1 = chartResultMap.Series.Add("S1");
+            S1.ChartType = SeriesChartType.Point;
+            Series S2 = chartResultMap.Series.Add("S2");
+            S2.ChartType = SeriesChartType.Point;
+
+            // Variables
+            int pt;
+            int row = charting.plotParameters.row;
+            int column = charting.plotParameters.column;
+            int lenPlate = charting.plotParameters.wells;
+
+            // Get the colors
+            int[] colors = new int[lenPlate];
+            colors = charting.ColorValue;
+
+            // Paste Values
+            for (int i = 0; i < row; i++)
+                for (int j = 0; j < column; j++)
+                {
+                    // Paste Active Color
+                    int index = (i * column) + j;
+                    pt = S1.Points.AddXY(j + 1, i + 1);
+                    S1.Points[pt].MarkerStyle = charting.plotParameters.dataMarkerStyle;
+                    S1.Points[pt].MarkerColor = Color.FromArgb(150, charting.ColorList[colors[index]]);
+                    S1.Points[pt].MarkerSize = charting.plotParameters.dataMarkerSize;                   
+
+                }
+
+
 
             chartResultMap.Update();
 
@@ -1881,7 +3114,7 @@ namespace FI.PlateReader.Gen4.JETI
         private void ChartResultMap_MarkerPaste(int row, int column)
         {
             // Paint Well Marker
-            int markerSize = charting.chartParameters.markerMarkerSize;
+            int markerSize = charting.plotParameters.markerMarkerSize;
             int pt = chartResultMap.Series["S2"].Points.AddXY(column + 1, row + 1);
             chartResultMap.Series["S2"].Points[pt].MarkerStyle = MarkerStyle.Cross;
             chartResultMap.Series["S2"].Points[pt].MarkerColor = Color.Black;
@@ -1893,9 +3126,21 @@ namespace FI.PlateReader.Gen4.JETI
         {
             ChartArea chartArea = chartResultMap.ChartAreas[0];
 
-            // Row/Col
-            int row = microplate.plate.Row;
-            int col = microplate.plate.Column;
+            // Variables
+            int row;
+            int col;
+
+            if(instrument.scanType == 3)
+            {
+                row = image.RowPixel;
+                col = image.ColumnPixel;
+            }
+            else
+            {
+                row = microplate.plate.Row;
+                col = microplate.plate.Column;
+            }
+
 
             chartArea.CursorX.LineWidth = 0;
             chartArea.CursorY.LineWidth = 0;
@@ -1913,8 +3158,39 @@ namespace FI.PlateReader.Gen4.JETI
             if (pY > row) { chartArea.CursorY.Position = row; pY = row; }
 
             // Update Textbox
-            lbColumn.Text = pX.ToString();
-            lbRow.Text = dataExport.ConvertRow((int)pY - 1);
+            if(instrument.scanType == 3)
+            {
+                // Cursor Position
+                int x = (int)(pX - 1);
+                int y = (int)(pY - 1);
+
+                double cOffset = image.motor.ColumnPosition[x] - (info.ColumnDirection * image.plate.ColumnOffset);
+                double rOffset = image.motor.RowPosition[y] - (info.RowDirection * image.plate.RowOffset);
+
+                // Well Selected
+                int cSelected = plateSetup.Column;
+                int rSelected = plateSetup.Row;
+
+                double cSpacing = microplate.plate.ColumnSpacing;
+                double rSpacing = microplate.plate.RowSpacing;
+
+
+                // Adjust for Well Location
+                cOffset += (cSelected * cSpacing);
+                rOffset += (rSelected * rSpacing);
+
+                instrument.rowOffset = rOffset.ToString();
+                instrument.columnOffset = cOffset.ToString();
+
+                lbColumn.Text = pX.ToString();
+                lbRow.Text = pY.ToString();
+            }
+            else
+            {
+                lbColumn.Text = pX.ToString();
+                lbRow.Text = dataExport.ConvertRow((int)pY - 1);
+            }
+
 
             lbColumn.Update();
             lbRow.Update();
@@ -1925,15 +3201,33 @@ namespace FI.PlateReader.Gen4.JETI
         {
             if (data.DataAvailable)
             {
+                // Variables
                 ChartArea chartArea = chartResultMap.ChartAreas[0];
 
+                int rowMin;
+                int rowMax;
+                int columnMin;
+                int columnMax;
+
+                // Differente min/max for well image
+                if (instrument.scanType == 3)
+                {
+                    rowMin = 1;
+                    rowMax = image.RowPixel;
+
+                    columnMin = 1;
+                    columnMax = image.ColumnPixel;
+                }
+                else
+                {
+                    rowMin = plateSetup.RowMin + 1;
+                    rowMax = plateSetup.RowMax + 1;
+
+                    columnMin = plateSetup.ColumnMin + 1;
+                    columnMax = plateSetup.ColumnMax + 1;
+                }
+
                 // Get Cursor Position
-                int rowMin = plateSetup.RowMin + 1;
-                int rowMax = plateSetup.RowMax + 1;
-
-                int columnMin = plateSetup.ColumnMin + 1;
-                int columnMax = plateSetup.ColumnMax + 1;
-
                 double pX = chartArea.CursorX.Position; //X Axis Coordinate of your mouse cursor
                 double pY = chartArea.CursorY.Position; //Y Axis Coordinate of your mouse cursor
 
@@ -1948,7 +3242,7 @@ namespace FI.PlateReader.Gen4.JETI
                 int sColumn = (int)pX - 1;
                 int sRow = (int)pY - 1;
 
-                UpdateDataChart(sRow, sColumn);
+                UpdateDataChart(instrument.CurrentScan, sRow, sColumn);
 
             }
         }
@@ -1987,7 +3281,15 @@ namespace FI.PlateReader.Gen4.JETI
             chartArea.AxisX2.MinorTickMark.Enabled = false;
             chartArea.AxisY2.MinorTickMark.Enabled = false;
 
-            chartArea.AxisX.MajorTickMark.Interval = 10;
+            if (info.Detector == "TIA")
+            {
+                chartArea.AxisX.MajorTickMark.Interval = 1;
+            }
+            else
+            {
+                chartArea.AxisX.MajorTickMark.Interval = 10;
+            }
+            
 
             // Grid Lines X
             chartArea.AxisX.MajorGrid.Enabled = false;
@@ -1995,7 +3297,15 @@ namespace FI.PlateReader.Gen4.JETI
             chartArea.AxisX2.MajorGrid.Enabled = false;
             chartArea.AxisX2.MinorGrid.Enabled = false;
 
-            chartArea.AxisX.MajorGrid.Interval = 20;
+            if (info.Detector == "TIA")
+            {
+                chartArea.AxisX.MajorGrid.Interval = 2;
+            }
+            else
+            {
+                chartArea.AxisX.MajorGrid.Interval = 20;
+            }
+            
             chartArea.AxisX.MajorGrid.LineDashStyle = ChartDashStyle.Dash;
 
             // Grid Lines Y
@@ -2018,11 +3328,23 @@ namespace FI.PlateReader.Gen4.JETI
             chartArea.AxisY.TitleFont = new Font("Arial", 12, FontStyle.Bold);
 
             // Set up the X Axis
-            chartArea.AxisX.Title = "Wavelength [nm]";
+            if (info.Detector == "TIA")
+            {
+                chartArea.AxisX.Title = "Time [ms]";
 
-            chartArea.AxisX.Minimum = info.WavelengthStart;
-            chartArea.AxisX.Maximum = info.WavelengthEnd;
-            chartArea.AxisX.Interval = info.WavelengthSpacing;
+                chartArea.AxisX.Minimum = info.WavelengthStart;
+                chartArea.AxisX.Maximum = info.WavelengthEnd;
+                chartArea.AxisX.Interval = 2;
+
+            }
+            else
+            {
+                chartArea.AxisX.Title = "Wavelength [nm]";
+
+                chartArea.AxisX.Minimum = info.WavelengthStart;
+                chartArea.AxisX.Maximum = info.WavelengthEnd;
+                chartArea.AxisX.Interval = 20;
+            }
 
             // Set up the Y Axis
             chartArea.AxisY.Title = "Fluorescence";
@@ -2118,16 +3440,12 @@ namespace FI.PlateReader.Gen4.JETI
             chartWaveform.Update();
         }
 
-        private void WaveformChart_ActivePaste(int row, int column)
+        private void WaveformChart_ActivePaste(int index, string wellName)
         {
-            // Get the Index of the desired waveform (Data is in spectrometer class)
-            int columnPlate = microplate.plate.Column;
-            int index = columnPlate * row + column;
-            string wellName = dataExport.ConvertRow(row) + (column + 1).ToString();
 
             // Point Chart
-            int start = info.PixelStart;
-            int end = info.PixelEnd;
+            int start = info.StartPixel;
+            int pixelLength = info.PixelLength;
 
             // Area Chart
             int x1 = data.analysisParameters.PixelA_Low;
@@ -2137,15 +3455,27 @@ namespace FI.PlateReader.Gen4.JETI
             int x4 = data.analysisParameters.PixelB_High;
 
             // Wavelengths
-            double[] wavelength = jeti.wavelength;  // info.Wavelength;
+            double[] wavelength = info.Wavelength;
 
             // Get the waveform and find max value
             double[] result = data.PlateResult[index].Waveform;
+            double[] result1 = data.PlateResult[index].Waveform;
+            double[] result2 = data.PlateResult[index].Waveform;
+            if (info.Detector == "TIA")
+            {
+                result1 = data.PlateResult[index].Waveform1;
+                result2 = data.PlateResult[index].Waveform2;                
+            }
+            
 
-            double max = charting.FindMax(data.PlateResult[index].Max);
+            if (instrument.Autoscale)
+            {
+                double max = charting.FindMax(data.PlateResult[index].Max);
 
-            chartWaveform.ChartAreas[0].AxisY.Minimum = 0;
-            chartWaveform.ChartAreas[0].AxisY.Maximum = max;
+                chartWaveform.ChartAreas[0].AxisY.Minimum = -0.1*max;
+                chartWaveform.ChartAreas[0].AxisY.Maximum = max;
+            }
+
 
             // Clear All Series and Legends
             chartWaveform.Series.Clear();
@@ -2219,26 +3549,71 @@ namespace FI.PlateReader.Gen4.JETI
             S4.Legend = "Legend2";
             S5.Legend = "Legend2";
 
-            // Waveform Plot
-            for (int i = start; i < end; i++)
+            if (info.Detector == "TIA")
             {
-                S1.Points.AddXY(wavelength[i], result[i] + 100);
-            }
+                // Waveform Plot
+                for (int i = start; i < (start + pixelLength); i++)
+                {
+                    S1.Points.AddXY(wavelength[i], result[i]);  // + 100);
+                }
 
-            // Intensity A: Area Chart
-            for (int i = x1; i < x2; i++)
-            {
-                S2.Points.AddXY(wavelength[i], result[i] + 100);
-            }
+                S2.ChartType = SeriesChartType.Line;
+                S2.MarkerSize = 4;
+                S2.MarkerStyle = MarkerStyle.Circle;
 
-            // Intensity B: Area Chart
-            for (int i = x3; i < x4; i++)
+                S3.ChartType = SeriesChartType.Line;
+                S3.MarkerSize = 4;
+                S3.MarkerStyle = MarkerStyle.Circle;
+
+                // Waveform Plot
+                for (int i = start; i < (start + pixelLength); i++)
+                {
+                    S2.Points.AddXY(wavelength[i], result1[i]);  // + 100);
+                }
+
+                // Waveform Plot
+                for (int i = start; i < (start + pixelLength); i++)
+                {
+                    S3.Points.AddXY(wavelength[i], result2[i]);  // + 100);
+                }
+            }
+            else
             {
-                S3.Points.AddXY(wavelength[i], result[i] + 100);
+                // Waveform Plot
+                for (int i = start; i < (start + pixelLength); i++)
+                {
+                    S1.Points.AddXY(wavelength[i], result[i]);  // + 100);
+                }
+
+                // Intensity A: Area Chart
+                for (int i = x1; i < x2; i++)
+                {
+                    S2.Points.AddXY(wavelength[i], result[i]);  // + 100);
+                }
+
+                // Intensity B: Area Chart
+                for (int i = x3; i < x4; i++)
+                {
+                    S3.Points.AddXY(wavelength[i], result[i]);  // + 100);
+                }
             }
 
             chartWaveform.Update();
 
+        }
+
+        private void btnAutoscale_Click(object sender, EventArgs e)
+        {
+            instrument.Autoscale = !instrument.Autoscale;
+
+            if (instrument.Autoscale)
+            {
+                btnAutoscale.Text = "AutoScale On";
+            }
+            else
+            {
+                btnAutoscale.Text = "AutoScale Off";
+            }
         }
 
 

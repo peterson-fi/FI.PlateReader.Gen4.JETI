@@ -1,0 +1,111 @@
+       private bool MeasurePlate(CancellationToken token, int currentScan)
+        {
+            // Set the Start Time
+            time.StartPlateStopwatch();
+
+            // Variables
+            int row = microplate.plate.Row;
+            int startColumn = plateSetup.ColumnMin;
+            int endColumn = plateSetup.ColumnMax;
+            int nColumns = plateSetup.NColumns;
+
+            double startColumnPosition = microplate.motor.ColumnPosition[startColumn];
+            double endColumnPosition = microplate.motor.ColumnPosition[endColumn];
+
+            bool error = true; 
+
+            // # of Rows
+            for (int i = 0; i < row; i++)
+            {
+                // Check Cancel
+                if (token.IsCancellationRequested)
+                    break;
+
+                // Skip inactive rows
+                if (!plateSetup.ActiveRow[i])
+                    continue;
+
+                // Step Row
+                error = versa.StepRowMotor(microplate.motor.RowPosition[i]);
+
+                if (!error)
+                {
+                    MessageBox.Show("Row Motor Error!");
+                    break;
+                }
+
+                // Step column to start scan position
+                if (i % 2 == 0)
+                {
+                    // Even Row (A,C,E...)
+                    error = versa.StepColumnMotor(startColumnPosition);
+                    versa.SetScanParameters(0, -microplate.plate.ColumnSpacing, 0, nColumns);
+                }
+                else
+                {
+                    // Odd Row (B,D,F...)
+                    error = versa.StepColumnMotor(endColumnPosition);
+                    versa.SetScanParameters(0, microplate.plate.ColumnSpacing, 0, nColumns);
+                }
+
+                // Check Column Motor Error
+                if (!error)
+                {
+                    MessageBox.Show("Column Motor Error!");
+                    break;
+                }
+
+                // Start stop-and-go measurement (Hardware Control)
+                error = versa.StartScanMeasurement();
+
+                if (!error)
+                {
+                    MessageBox.Show("Scan Error!");
+                    break;
+                }
+
+                // Retrieve the data from the scan
+                for (int j = 0; j < nColumns; j++)
+                {
+                    // Even or Odd Row
+                    int columnIndex;
+
+                    if (i % 2 == 0)
+                    {
+                        // Even Row (A,C,E...)
+                        columnIndex = startColumn + j;
+                    }
+                    else
+                    {
+                        // Odd Row (B,D,F...)
+                        columnIndex = endColumn - j;
+                    }
+
+                    // Update Clock
+                    time.GetPlateTime();
+                    time.GetScanTime();
+
+                    // Well Index
+                    int column = microplate.plate.Column;
+                    int index = (i * column) + columnIndex;
+
+                    // Get and Set Results
+                    versa.GetScanResults(j);
+
+                    data.SetResult(currentScan, index, microplate.plate.Wells, versa.Waveform);
+
+                    // Plot Data  
+                    UpdateDataChart(currentScan, i, columnIndex);
+                }
+
+                // Wait for scam measurement to finish
+                versa.EndScanMeasurement();
+
+            }
+
+            // End Time
+            time.EndPlateStopwatch();
+
+            return error; 
+        
+        }

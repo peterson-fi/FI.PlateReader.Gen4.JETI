@@ -1,0 +1,188 @@
+        private void WellImage(CancellationToken token)
+        {
+
+            // Variables
+            bool error;
+            int row = image.RowPixel;
+            int column = image.ColumnPixel;
+            int wells = image.Wells;
+
+            double startColumnPosition = image.motor.ColumnPosition[0];
+            double endColumnPosition = image.motor.ColumnPosition[column - 1];
+
+
+            // Initialise Data
+            data.InitializeData(1, wells);
+
+            // Plate Scan Tasks
+            instrument.ActiveScan = true;
+            versa.SetScanHandles();
+
+            // Start stopwatch
+            time.StartScanStopwatch();
+
+            // Move to start position
+            error = versa.MoveReferencePosition();
+
+            if (!error)
+            {
+                MessageBox.Show("Reference Move Error!");
+                goto EndPlate;
+            }
+
+            // Background measurement
+            instrument.SetInstrumentStatus(8);
+            versa.SetIntegrationTime();
+            error = versa.DarkMeasurement();
+
+            if (!error)
+            {
+                MessageBox.Show("Error acquiring dark measurement!");
+                goto EndPlate;
+            }
+
+            // Turn on light source
+            versa.SetLedCurrent();
+            versa.LedOn();
+
+            // Stop Btn
+            EnableStopBtn();
+
+            // Update Instrument Status (Scanning Microplate)
+            instrument.SetInstrumentStatus(27);
+
+            // Start plate time
+            time.StartPlateStopwatch();
+
+            // # of Rows
+            for (int i = 0; i < row; i++)
+            {
+                // Check Cancel
+                if (token.IsCancellationRequested)
+                    break;
+
+                // Step Row
+                error = versa.StepRowMotor(image.motor.RowPosition[i]);
+
+                if (!error)
+                {
+                    MessageBox.Show("Row Motor Error!");
+                    break;
+                }
+
+                // Step column to start or end of scan area & Set Scanning Parameters
+                if (i % 2 == 0)
+                {
+                    // Even Row (A,C,E...)
+                    error = versa.StepColumnMotor(startColumnPosition);
+                    versa.SetScanParameters(0, -image.motor.ColumnStepSize, 0, column);
+                }
+                else
+                {
+                    // Odd Row (B,D,F...)
+                    error = versa.StepColumnMotor(endColumnPosition);
+                    versa.SetScanParameters(0, image.motor.ColumnStepSize, 0, column);
+                }
+
+                // Check Column Motor Error
+                if (!error)
+                {
+                    MessageBox.Show("Column Motor Error!");
+                    break;
+                }
+
+                // Start stop-and-go measurement (Hardware Control)
+                error = versa.StartScanMeasurement();
+
+                if (!error)
+                {
+                    MessageBox.Show("Scan Error!");
+                    break;
+                }
+
+                // Retrieve the data from the scan
+                for (int j = 0; j < column; j++)
+                {
+                    // Even or Odd Row
+                    int columnIndex;
+
+                    if (i % 2 == 0)
+                    {
+                        // Even Row (A,C,E...)
+                        columnIndex = j;
+                    }
+                    else
+                    {
+                        // Odd Row (B,D,F...)
+                        columnIndex = (column - 1) - j;
+                    }
+
+                    // Update Clock
+                    time.GetPlateTime();
+                    time.GetScanTime();
+
+                    // Well Index
+                    int index = (i * column) + columnIndex;
+
+                    // Get and Set Results
+                    versa.GetScanResults(j);
+
+                    data.SetResult(0, index, wells, versa.Waveform);
+
+                    // Plot Data  
+                    UpdateDataChart(0, i, columnIndex);
+
+                }
+
+                // Wait for scam measurement to finish
+                versa.EndScanMeasurement();
+
+            }
+
+            // End Time
+            time.EndPlateStopwatch();
+
+            // End Plate Tasks
+            EndPlate:
+
+            // Turn off Light Source
+            versa.LedOff();
+
+            // End Timer
+            time.EndScanStopwatch();
+
+            // Save Data
+            data.SetData();
+            SaveImage();
+
+            // End Plate Tasks
+            if (error)
+            {
+                // Move Back to Reference Position
+                versa.MoveReferencePosition();
+
+                // Instrument State
+                StateDeviceActive();
+                EnableSaveBtn();
+                instrument.ActiveScan = false;
+
+                // Update UI Label
+                if (tokenSourceScan.IsCancellationRequested)
+                {
+                    // Scan Cancelled
+                    instrument.SetInstrumentStatus(22);
+                }
+                else
+                {
+                    // Scan finishes sucessfully
+                    instrument.SetInstrumentStatus(21);
+                }
+
+            }
+            else
+            {
+                StateError();
+            }
+
+
+        }
