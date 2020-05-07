@@ -483,7 +483,7 @@ namespace FI.PlateReader.Gen4.JETI
                 int pixelLength = info.PixelLength;
 
                 // Wavelength
-                line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", "", "", "", "", "", "","Wavelength [nm]");
+                line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t", "", "", "", "", "", "","","","Wavelength [nm]");
                 file.Write(line);
 
                 for (int i = start; i < (start + pixelLength); i++)
@@ -495,7 +495,7 @@ namespace FI.PlateReader.Gen4.JETI
                 file.WriteLine();
 
                 // Header
-                line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", "Index", "Row", "Column","Intensity A", "Intensity B", "Ratio", "Moment");
+                line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t", "Index", "Row", "Column","Intensity A", "Intensity B", "Ratio", "Moment", "Temperature", "Heatsink");
                 file.WriteLine(line);
 
                 // Loop through Data
@@ -520,8 +520,10 @@ namespace FI.PlateReader.Gen4.JETI
                         double value2 = PlateResult[index].IntensityB;
                         double value3 = PlateResult[index].Ratio;
                         double value4 = PlateResult[index].Moment;
+                        double value5 = PlateResult[index].Temperature;
+                        double value6 = PlateResult[index].Heatsink;
               
-                        line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", index + 1, row, column, value1, value2, value3,value4);
+                        line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t", index + 1, row, column, value1, value2, value3,value4, value5, value6);
                         file.Write(line);
 
                         for (int k = start; k < (start + pixelLength); k++)
@@ -546,7 +548,7 @@ namespace FI.PlateReader.Gen4.JETI
                 int pixelLength = info.PixelLength;
 
                 // Wavelength
-                line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t","", "", "", "", "", "", "", "", "Wavelength [nm]");
+                line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t","", "", "", "", "", "", "", "", "", "", "Wavelength [nm]");
                 file.Write(line);
 
                 for (int i = start; i < (start + pixelLength); i++)
@@ -558,23 +560,24 @@ namespace FI.PlateReader.Gen4.JETI
                 file.WriteLine();
 
                 // Header
-                line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t", "Scan", "Scan Index", "Index", "Row", "Column", "Intensity A", "Intensity B", "Ratio", "Moment");
+                line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", "Scan", "Scan Index", "Index", "Row", "Column", "Temperature", "Heatsink", "Intensity A", "Intensity B", "Ratio", "Moment");
                 file.WriteLine(line);
 
                 // Loop through Data
-                for(int n = 0; n < NScans; n++)
+                for (int i = 0; i < plate.Row; i++)
                 {
-                    for (int i = 0; i < plate.Row; i++)
+                    // Skip inactive Row
+                    if (!ActiveRow[i])
+                        continue;
+
+                    for (int j = 0; j < plate.Column; j++)
                     {
-                        // Skip inactive Row
-                        if (!ActiveRow[i])
+                        // Skip inactive Column
+                        if (!ActiveColumn[j])
                             continue;
 
-                        for (int j = 0; j < plate.Column; j++)
+                        for (int n = 0; n < NScans; n++)
                         {
-                            // Skip inactive Column
-                            if (!ActiveColumn[j])
-                                continue;
 
                             int idx = i * plate.Column + j;
                             int index = n * plate.Wells + (i * plate.Column + j);
@@ -586,8 +589,10 @@ namespace FI.PlateReader.Gen4.JETI
                             double value2 = PlateResult[index].IntensityB;
                             double value3 = PlateResult[index].Ratio;
                             double value4 = PlateResult[index].Moment;
+                            double value5 = PlateResult[index].Temperature;
+                            double value6 = PlateResult[index].Heatsink;
 
-                            line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t", n + 1, index + 1, idx + 1, row, column, value1, value2, value3, value4);
+                            line = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", n + 1, index + 1, idx + 1, row, column, value5, value6, value1, value2, value3, value4);
                             file.Write(line);
 
                             for (int k = start; k < (start + pixelLength); k++)

@@ -58,6 +58,8 @@ namespace FI.PlateReader.Gen4.JETI
             public double IntensityB;
             public double Ratio;
             public double Moment;
+            public double Temperature;
+            public double Heatsink;
 
             public double[] Waveform;
             public double[] Waveform1;
@@ -77,6 +79,7 @@ namespace FI.PlateReader.Gen4.JETI
             public double[][] IntensityB;
             public double[][] Ratio;
             public double[][] Moment;
+            public double[][] Temperature;
 
             public double[][][] Data;   // [Scan] [Parameter] [Well]
         }
@@ -99,13 +102,15 @@ namespace FI.PlateReader.Gen4.JETI
                     Index = i,
                     Name = "Protein",
                     Concentration = 0,
-                    Flag = false, 
+                    Flag = false,
                     Info = "",
 
                     IntensityA = 0,
                     IntensityB = 0,
                     Ratio = 0,
                     Moment = 0,
+                    Temperature = 20,
+                    Heatsink = 20,
 
                     Waveform = new double[info.NPixel],
                     Waveform1 = new double[info.NPixel],
@@ -125,7 +130,7 @@ namespace FI.PlateReader.Gen4.JETI
             block.IntensityB = new double[nScans][];
             block.Ratio = new double[nScans][];
             block.Moment = new double[nScans][];
-
+            block.Temperature = new double[nScans][];           
 
             for(int i = 0; i < nScans; i++)
             {
@@ -133,6 +138,7 @@ namespace FI.PlateReader.Gen4.JETI
                 block.IntensityB[i] = new double[wells];
                 block.Ratio[i] = new double[wells];
                 block.Moment[i] = new double[wells];
+                block.Temperature[i] = new double[wells];
             }
 
 
@@ -160,7 +166,7 @@ namespace FI.PlateReader.Gen4.JETI
             DataAvailable = false;
         }
 
-        public void SetResult(int scan, int index, int wells, double[] waveform)
+        public void SetResult(int scan, int index, int wells, double[] waveform, double temp, double heatsink)
         {
 
             // Variables
@@ -177,12 +183,15 @@ namespace FI.PlateReader.Gen4.JETI
             PlateResult[indexScan].IntensityB = result[1];
             PlateResult[indexScan].Ratio = result[2];
             PlateResult[indexScan].Moment = result[3];
+            PlateResult[indexScan].Temperature = temp;
+            PlateResult[indexScan].Heatsink = heatsink;
 
             // Heat Map Data
             block.IntensityA[scan][index] = result[0];
             block.IntensityB[scan][index] = result[1];
             block.Ratio[scan][index] = result[2];
             block.Moment[scan][index] = result[3];
+            block.Temperature[scan][index] = temp;
 
             block.Data[scan][0][index] = result[0];
             block.Data[scan][1][index] = result[1];
@@ -196,7 +205,7 @@ namespace FI.PlateReader.Gen4.JETI
 
         }
 
-        public void SetResultTIA(int scan, int index, int wells, double[] waveform, double[] waveform1, double[] waveform2)
+        public void SetResultTIA(int scan, int index, int wells, double[] waveform, double[] waveform1, double[] waveform2, double temp, double heatsink)
         {
 
             // Variables
@@ -215,12 +224,15 @@ namespace FI.PlateReader.Gen4.JETI
             PlateResult[indexScan].IntensityB = result[1];
             PlateResult[indexScan].Ratio = result[2];
             PlateResult[indexScan].Moment = result[3];
+            PlateResult[indexScan].Temperature = temp;
+            PlateResult[indexScan].Heatsink = heatsink;
 
             // Heat Map Data
             block.IntensityA[scan][index] = result[0];
             block.IntensityB[scan][index] = result[1];
             block.Ratio[scan][index] = result[2];
             block.Moment[scan][index] = result[3];
+            block.Temperature[scan][index] = temp;
 
             block.Data[scan][0][index] = result[0];
             block.Data[scan][1][index] = result[1];

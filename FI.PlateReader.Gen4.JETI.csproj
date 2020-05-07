@@ -101,6 +101,7 @@
     </Compile>
     <Compile Include="Instrument.cs" />
     <Compile Include="JETI.cs" />
+    <Compile Include="Meerstetter.cs" />
     <Compile Include="Microplate.cs" />
     <Compile Include="Photodiode.cs" />
     <Compile Include="PlateSetup.cs" />
@@ -110,6 +111,9 @@
     <Compile Include="Time.cs" />
     <Compile Include="Versa.cs" />
     <Compile Include="WellImage.cs" />
+    <EmbeddedResource Include="Form1.resx">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

@@ -24,6 +24,11 @@ namespace FI.PlateReader.Gen4.JETI
         public int NScans { get; set; }
         public int Delay { get; set; }
 
+        // Temperature Scan
+        public double StartingTemperature { get; set; }
+        public double EndingTemperature { get; set; }
+        public double RampRate { get; set; }
+
         // Plate Type & Scan
         public int scanType { get; set; }
         public int plateType { get; set; }

@@ -15,3 +15,5 @@ C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\obj\x86\Debug\FI.PlateReader
 C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\obj\x86\Debug\FI.PlateReader.Gen4.JETI.csproj.CoreCompileInputs.cache
 C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\obj\x86\Debug\FI.PlateReader.Gen4.JETI.exe
 C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\obj\x86\Debug\FI.PlateReader.Gen4.JETI.pdb
+C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\obj\x86\Debug\FI.PlateReader.Gen4.JETI.csprojAssemblyReference.cache
+C:\Users\Kurt\source\repos\FI.PlateReader.Gen4.JETI\obj\x86\Debug\FI.PlateReader.Gen4.JETI.Form1.resources

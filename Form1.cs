@@ -20,6 +20,7 @@ namespace FI.PlateReader.Gen4.JETI
         Versa versa = new Versa();
         JETI jeti = new JETI();
         Photodiode tia = new Photodiode();
+        Meerstetter ms = new Meerstetter();
 
         // Internal Components
         Instrument instrument = new Instrument();       // Instrument Values (UI Software)
@@ -191,6 +192,14 @@ namespace FI.PlateReader.Gen4.JETI
                     {
                         time.Delay(10);
 
+                        if ((ms.Connected) && (!instrument.ActiveScan))
+                        {
+                            ms.GetHeatsinkTemp();
+                            time.Delay(10);
+                            ms.GetObjectTemp();
+                            time.Delay(10);
+                        }
+
                         UpdateUILabels();
                     }
                 }
@@ -245,8 +254,13 @@ namespace FI.PlateReader.Gen4.JETI
         {
             bool jconnect = true;
             bool tconnect = true;
+            bool mconnect = true;
+
             // Connect to Controller
             bool vconnect = versa.Connect();
+
+            // Connect to Meerstetter
+            mconnect = ms.Connect();
 
             // Connect to JETI
             if (info.Detector == "JETI")
@@ -339,6 +353,7 @@ namespace FI.PlateReader.Gen4.JETI
                         Task.Factory.StartNew(() => KineticScan(token), token);
                         break;
                     case 2:
+                        instrument.ActiveScan = false;
                         Task.Factory.StartNew(() => RealTimeData(token), token);
                         break;
                     case 3:
@@ -467,6 +482,11 @@ namespace FI.PlateReader.Gen4.JETI
             instrument.CurrentScan = 0; 
             instrument.NScans = (int)nudScans.Value;
             instrument.Delay = (int)nudDelay.Value;
+
+            // Temperature
+            instrument.StartingTemperature = (double)nudStartingTemp.Value;
+            instrument.EndingTemperature = (double)nudEndingTemp.Value;
+            instrument.RampRate = (double)nudRampRate.Value;
 
             // Data Class
             data.SetAnalysisParameters(wavA,wavB, instrument.WavelengthBand[bandAIndex], instrument.WavelengthBand[bandBIndex]);
@@ -793,6 +813,12 @@ namespace FI.PlateReader.Gen4.JETI
             // Start stopwatch
             time.StartScanStopwatch();
 
+            // Set starting temp... wait for stable
+            if (ms.Connected)
+            {
+                ms.SetTargetTemp((float)instrument.StartingTemperature);
+            }
+
             // Move to start position
             error = versa.MoveReferencePosition();
 
@@ -839,8 +865,17 @@ namespace FI.PlateReader.Gen4.JETI
             // Stop Btn
             EnableStopBtn();
 
+            // Set ramp rate and ending temperature
+            if (ms.Connected)
+            {
+                time.Delay(10);
+                ms.SetRampRate((float)instrument.RampRate);
+                time.Delay(10);
+                ms.SetTargetTemp((float)instrument.EndingTemperature);
+            }
+
             // Kinetic Scan Loop
-            for(int i = 0; i < scans; i++)
+            for (int i = 0; i < scans; i++)
             {
                 // Check Cancel
                 if (token.IsCancellationRequested)
@@ -899,6 +934,13 @@ namespace FI.PlateReader.Gen4.JETI
 
             // End Plate Tasks
             EndPlate:
+
+            // Set Temperature back to starting temp
+            if (ms.Connected)
+            {
+                ms.SetRampRate(10);
+                ms.SetTargetTemp((float)instrument.StartingTemperature);
+            }
 
             // Turn off Light Source
             versa.LedOff();
@@ -998,6 +1040,15 @@ namespace FI.PlateReader.Gen4.JETI
                     break;
                 }
 
+                // Get Current Temperature
+                //if (ms.Connected)
+                //{
+                //    ms.GetHeatsinkTemp();
+                //    time.Delay(10);
+                //    ms.GetObjectTemp();
+                //    time.Delay(10);
+                //}
+
                 // Start stop-and-go measurement (Hardware Control)
                 error = versa.StartScanMeasurement();
 
@@ -1035,7 +1086,16 @@ namespace FI.PlateReader.Gen4.JETI
                     // Get and Set Results
                     versa.GetScanResults(j);
 
-                    data.SetResult(currentScan, index, microplate.plate.Wells, versa.Waveform);
+                    // Get Current Temperature
+                    if (ms.Connected)
+                    {
+                        ms.GetHeatsinkTemp();
+                        time.Delay(10);
+                        ms.GetObjectTemp();
+                        time.Delay(10);
+                    }
+
+                    data.SetResult(currentScan, index, microplate.plate.Wells, versa.Waveform, ms.ObjectTemp, ms.HeatsinkTemp);
 
                     // Plot Data  
                     UpdateDataChart(currentScan, i, columnIndex);
@@ -1120,6 +1180,15 @@ namespace FI.PlateReader.Gen4.JETI
                 //    break;
                 //}
 
+                //// Get Current Temperature
+                //if (ms.Connected)
+                //{
+                //    ms.GetHeatsinkTemp();
+                //    time.Delay(10);
+                //    ms.GetObjectTemp();
+                //    time.Delay(10);
+                //}
+
                 // Retrieve the data from the scan
                 for (int j = 0; j < column; j++)
                 {
@@ -1157,20 +1226,29 @@ namespace FI.PlateReader.Gen4.JETI
                     // Well Index                    
                     int index = (i * column) + columnIndex;
 
+                    // Get Current Temperature
+                    if (ms.Connected)
+                    {
+                        //ms.GetHeatsinkTemp();
+                        //time.Delay(10);
+                        ms.GetObjectTemp();
+                        //time.Delay(10);
+                    }
+
                     // Measure and set results
                     switch (info.Detector)
                     {
                         case "LineScan":
                             versa.LightMeasurement();
-                            data.SetResult(currentScan, index, microplate.plate.Wells, versa.Waveform);
+                            data.SetResult(currentScan, index, microplate.plate.Wells, versa.Waveform, ms.ObjectTemp, ms.HeatsinkTemp);
                             break;
                         case "JETI":
                             jeti.LightMeasurement();
-                            data.SetResult(currentScan, index, microplate.plate.Wells, jeti.Waveform);
+                            data.SetResult(currentScan, index, microplate.plate.Wells, jeti.Waveform, ms.ObjectTemp, ms.HeatsinkTemp);
                             break;
                         case "TIA":
                             tia.LightMeasurement();
-                            data.SetResultTIA(currentScan, index, microplate.plate.Wells, tia.Waveform, tia.Waveform1, tia.Waveform2);
+                            data.SetResultTIA(currentScan, index, microplate.plate.Wells, tia.Waveform, tia.Waveform1, tia.Waveform2, ms.ObjectTemp, ms.HeatsinkTemp);
                             break;
 
                     }
@@ -1208,7 +1286,7 @@ namespace FI.PlateReader.Gen4.JETI
             data.InitializeData(scans, wells);
 
             // Plate Scan Tasks
-            instrument.ActiveScan = true;
+            instrument.ActiveScan = false;
             versa.SetScanHandles();
 
             // Start stopwatch
@@ -1283,20 +1361,29 @@ namespace FI.PlateReader.Gen4.JETI
                 // Set Result
                 int index = rowMeasurement * column + columnMeasurement;
 
+                // Get Current Temperature
+                if (ms.Connected)
+                {
+                    ms.GetHeatsinkTemp();
+                    time.Delay(10);
+                    ms.GetObjectTemp();
+                    time.Delay(10);
+                }
+
                 // Measure and set results
                 switch (info.Detector)
                 {
                     case "LineScan":
                         versa.LightMeasurement();
-                        data.SetResult(i, index, wells, versa.Waveform);
+                        data.SetResult(i, index, wells, versa.Waveform, ms.ObjectTemp, ms.HeatsinkTemp);
                         break;
                     case "JETI":
                         jeti.LightMeasurement();
-                        data.SetResult(i, index, wells, jeti.Waveform);
+                        data.SetResult(i, index, wells, jeti.Waveform, ms.ObjectTemp, ms.HeatsinkTemp);
                         break;
                     case "TIA":
                         tia.LightMeasurement();
-                        data.SetResultTIA(i, index, wells, tia.Waveform, tia.Waveform1, tia.Waveform2);
+                        data.SetResultTIA(i, index, wells, tia.Waveform, tia.Waveform1, tia.Waveform2, ms.ObjectTemp, ms.HeatsinkTemp);
                         break;
 
                 }
@@ -1511,7 +1598,7 @@ namespace FI.PlateReader.Gen4.JETI
                     // Get and Set Results
                     versa.GetScanResults(j);
 
-                    data.SetResult(0, index, wells, versa.Waveform);
+                    data.SetResult(0, index, wells, versa.Waveform, ms.ObjectTemp, ms.HeatsinkTemp);
 
                     // Plot Data  
                     UpdateDataChart(0, i, columnIndex);
@@ -1725,15 +1812,15 @@ namespace FI.PlateReader.Gen4.JETI
                     {
                         case "LineScan":
                             versa.LightMeasurement();
-                            data.SetResult(0, index, wells, versa.Waveform);
+                            data.SetResult(0, index, wells, versa.Waveform, ms.ObjectTemp, ms.HeatsinkTemp);
                             break;
                         case "JETI":
                             jeti.LightMeasurement();
-                            data.SetResult(0, index, wells, jeti.Waveform);
+                            data.SetResult(0, index, wells, jeti.Waveform, ms.ObjectTemp, ms.HeatsinkTemp);
                             break;
                         case "TIA":
                             tia.LightMeasurement();
-                            data.SetResultTIA(0, index, wells, tia.Waveform, tia.Waveform1, tia.Waveform2);
+                            data.SetResultTIA(0, index, wells, tia.Waveform, tia.Waveform1, tia.Waveform2, ms.ObjectTemp, ms.HeatsinkTemp);
                             break;
 
                     }
@@ -2153,6 +2240,7 @@ namespace FI.PlateReader.Gen4.JETI
             else
             {
                 // Disable All
+                instrument.ActiveScan = false;
                 StateDisableAll();
                 ResetDataCharts();
 
@@ -2175,6 +2263,7 @@ namespace FI.PlateReader.Gen4.JETI
             else
             {
                 // Disable All
+                instrument.ActiveScan = false;
                 StateDisableAll();
                 ResetDataCharts();
 
@@ -2197,6 +2286,7 @@ namespace FI.PlateReader.Gen4.JETI
             else
             {
                 // Disable All
+                instrument.ActiveScan = false;
                 StateDisableAll();
 
                 // Enable Tab Assay
@@ -2224,6 +2314,7 @@ namespace FI.PlateReader.Gen4.JETI
             else
             {
                 // Disable All
+                instrument.ActiveScan = true;
                 StateDisableAll();
 
                 // Btns
@@ -2269,6 +2360,7 @@ namespace FI.PlateReader.Gen4.JETI
             else
             {
                 // Disable Buttons
+                instrument.ActiveScan = true;
                 DisableButtons();
                 tabControl.SelectedTab = tabMeasure;
             }
@@ -2314,7 +2406,10 @@ namespace FI.PlateReader.Gen4.JETI
                     index = (scan * wells) + index;
 
                     ChartResultMap_MarkerPaste(row, columnIndex);
-                    WaveformChart_ActivePaste(index, wellName);
+                    if (!instrument.ActiveScan)
+                    {
+                        WaveformChart_ActivePaste(index, wellName);
+                    }                    
                 }
 
             }
@@ -2348,6 +2443,10 @@ namespace FI.PlateReader.Gen4.JETI
                 // Row and Column Offset position (Well Image)
                 labelRowOffset.Text = instrument.rowOffset;
                 labelColumnOffset.Text = instrument.columnOffset;
+
+                // Object and Heatsink temperatures.
+                textObjectTemp.Text = ms.ObjectTemp.ToString("F1");
+                textHeatsink.Text = ms.HeatsinkTemp.ToString("F1");
 
                 // Update
                 toolStrip.Update();
@@ -3616,6 +3715,20 @@ namespace FI.PlateReader.Gen4.JETI
             }
         }
 
+        private void btnSetTarget_Click(object sender, EventArgs e)
+        {
+            float fTarget;
+            bool rtrn;
 
+            // Get length of acquisition and Navg.
+            rtrn = float.TryParse(nudStartingTemp.Text, out fTarget);
+            if (!rtrn)
+            {
+                return;
+            }
+            rtrn = ms.SetRampRate(10);
+            rtrn = ms.SetTargetTemp(fTarget);
+            rtrn = ms.SetOutputStatus(true);
+        }
     }
 }

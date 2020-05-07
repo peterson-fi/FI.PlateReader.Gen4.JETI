@@ -41,7 +41,7 @@ ColumnPositionError	0.15
 ColumnSpeed	100
 ColumnAcceleration	1000
 ColumnAccurateHome	FALSE
-DetectorName	TIA
+DetectorName	LineScan
 DetectorGain	1
 Pixels	2048
 PostIntegrationWait	88
