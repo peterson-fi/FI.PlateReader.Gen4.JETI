@@ -94,8 +94,17 @@ namespace FI.PlateReader.Gen4.JETI
             PlateResult = new List<Well>();
 
             int totalWells = nScans * wells;
+            int chnLength = 1;
+            if (info.Detector == "TIA")
+            {
+                chnLength = info.NPixel;
+            }
+            else
+            {
+                chnLength = 1;
+            }
 
-            for(int i = 0; i < totalWells; i++)
+            for (int i = 0; i < totalWells; i++)
             {
                 PlateResult.Add(new Well
                 {
@@ -112,9 +121,10 @@ namespace FI.PlateReader.Gen4.JETI
                     Temperature = 20,
                     Heatsink = 20,
 
+   
                     Waveform = new double[info.NPixel],
-                    Waveform1 = new double[info.NPixel],
-                    Waveform2 = new double[info.NPixel],
+                    Waveform1 = new double[chnLength],
+                    Waveform2 = new double[chnLength],
                     Max = 0
 
                 });

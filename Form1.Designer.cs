@@ -28,6 +28,16 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend3 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Legend legend4 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
@@ -48,12 +58,22 @@
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.btnSaveData = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnLoadConfig = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator10 = new System.Windows.Forms.ToolStripSeparator();
             this.labelClock = new System.Windows.Forms.ToolStripLabel();
             this.labelStatus = new System.Windows.Forms.ToolStripLabel();
             this.labelFixed = new System.Windows.Forms.ToolStripLabel();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.tabControl = new System.Windows.Forms.TabControl();
             this.tabAssayProtocol = new System.Windows.Forms.TabPage();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.nudEndingTemp = new System.Windows.Forms.NumericUpDown();
+            this.label10 = new System.Windows.Forms.Label();
+            this.btnSetTarget = new System.Windows.Forms.Button();
+            this.nudRampRate = new System.Windows.Forms.NumericUpDown();
+            this.nudStartingTemp = new System.Windows.Forms.NumericUpDown();
+            this.label13 = new System.Windows.Forms.Label();
+            this.label14 = new System.Windows.Forms.Label();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.nudDelay = new System.Windows.Forms.NumericUpDown();
             this.nudScans = new System.Windows.Forms.NumericUpDown();
@@ -94,6 +114,7 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.chartWaveform = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.groupBox6 = new System.Windows.Forms.GroupBox();
+            this.chkPlotWaveform = new System.Windows.Forms.CheckBox();
             this.lbLegendMax = new System.Windows.Forms.Label();
             this.lbLegendMin = new System.Windows.Forms.Label();
             this.lbColumn = new System.Windows.Forms.Label();
@@ -104,6 +125,18 @@
             this.cboPlotSelection = new System.Windows.Forms.ComboBox();
             this.chartResultMap = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.tabResults = new System.Windows.Forms.TabPage();
+            this.groupBox7 = new System.Windows.Forms.GroupBox();
+            this.chartThermal = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.label12 = new System.Windows.Forms.Label();
+            this.label15 = new System.Windows.Forms.Label();
+            this.label16 = new System.Windows.Forms.Label();
+            this.label17 = new System.Windows.Forms.Label();
+            this.label18 = new System.Windows.Forms.Label();
+            this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.label20 = new System.Windows.Forms.Label();
+            this.cboThermalSelection = new System.Windows.Forms.ComboBox();
+            this.chartThermalMap = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel3 = new System.Windows.Forms.ToolStripLabel();
             this.labelPlateTime = new System.Windows.Forms.ToolStripLabel();
@@ -125,17 +158,13 @@
             this.textObjectTemp = new System.Windows.Forms.ToolStripTextBox();
             this.labelHeatsink = new System.Windows.Forms.ToolStripLabel();
             this.textHeatsink = new System.Windows.Forms.ToolStripTextBox();
-            this.groupBox4 = new System.Windows.Forms.GroupBox();
-            this.nudRampRate = new System.Windows.Forms.NumericUpDown();
-            this.nudStartingTemp = new System.Windows.Forms.NumericUpDown();
-            this.label13 = new System.Windows.Forms.Label();
-            this.label14 = new System.Windows.Forms.Label();
-            this.btnSetTarget = new System.Windows.Forms.Button();
-            this.label10 = new System.Windows.Forms.Label();
-            this.nudEndingTemp = new System.Windows.Forms.NumericUpDown();
             this.toolStrip.SuspendLayout();
             this.tabControl.SuspendLayout();
             this.tabAssayProtocol.SuspendLayout();
+            this.groupBox4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudEndingTemp)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudRampRate)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudStartingTemp)).BeginInit();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudDelay)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudScans)).BeginInit();
@@ -155,11 +184,13 @@
             this.groupBox6.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chartLegend)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chartResultMap)).BeginInit();
+            this.tabResults.SuspendLayout();
+            this.groupBox7.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.chartThermal)).BeginInit();
+            this.groupBox5.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chartThermalMap)).BeginInit();
             this.toolStrip1.SuspendLayout();
-            this.groupBox4.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.nudRampRate)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudStartingTemp)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudEndingTemp)).BeginInit();
             this.SuspendLayout();
             // 
             // toolStrip
@@ -177,6 +208,8 @@
             this.toolStripSeparator3,
             this.btnSaveData,
             this.toolStripSeparator2,
+            this.btnLoadConfig,
+            this.toolStripSeparator10,
             this.labelClock,
             this.labelStatus,
             this.labelFixed,
@@ -184,7 +217,7 @@
             this.toolStrip.Location = new System.Drawing.Point(0, 0);
             this.toolStrip.Name = "toolStrip";
             this.toolStrip.Padding = new System.Windows.Forms.Padding(0, 0, 3, 0);
-            this.toolStrip.Size = new System.Drawing.Size(1283, 27);
+            this.toolStrip.Size = new System.Drawing.Size(1643, 27);
             this.toolStrip.TabIndex = 4;
             this.toolStrip.Text = "toolStrip2";
             // 
@@ -267,6 +300,21 @@
             this.toolStripSeparator2.Name = "toolStripSeparator2";
             this.toolStripSeparator2.Size = new System.Drawing.Size(6, 27);
             // 
+            // btnLoadConfig
+            // 
+            this.btnLoadConfig.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.btnLoadConfig.Image = ((System.Drawing.Image)(resources.GetObject("btnLoadConfig.Image")));
+            this.btnLoadConfig.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnLoadConfig.Name = "btnLoadConfig";
+            this.btnLoadConfig.Size = new System.Drawing.Size(94, 24);
+            this.btnLoadConfig.Text = "Load Config";
+            this.btnLoadConfig.Click += new System.EventHandler(this.btnLoadConfig_Click);
+            // 
+            // toolStripSeparator10
+            // 
+            this.toolStripSeparator10.Name = "toolStripSeparator10";
+            this.toolStripSeparator10.Size = new System.Drawing.Size(6, 27);
+            // 
             // labelClock
             // 
             this.labelClock.Name = "labelClock";
@@ -323,6 +371,126 @@
             this.tabAssayProtocol.TabIndex = 0;
             this.tabAssayProtocol.Text = "Assay Protocol";
             this.tabAssayProtocol.UseVisualStyleBackColor = true;
+            // 
+            // groupBox4
+            // 
+            this.groupBox4.Controls.Add(this.nudEndingTemp);
+            this.groupBox4.Controls.Add(this.label10);
+            this.groupBox4.Controls.Add(this.btnSetTarget);
+            this.groupBox4.Controls.Add(this.nudRampRate);
+            this.groupBox4.Controls.Add(this.nudStartingTemp);
+            this.groupBox4.Controls.Add(this.label13);
+            this.groupBox4.Controls.Add(this.label14);
+            this.groupBox4.Location = new System.Drawing.Point(3, 460);
+            this.groupBox4.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.groupBox4.Size = new System.Drawing.Size(811, 108);
+            this.groupBox4.TabIndex = 82;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "Temperature Parameters";
+            // 
+            // nudEndingTemp
+            // 
+            this.nudEndingTemp.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.nudEndingTemp.Location = new System.Drawing.Point(234, 74);
+            this.nudEndingTemp.Name = "nudEndingTemp";
+            this.nudEndingTemp.Size = new System.Drawing.Size(153, 26);
+            this.nudEndingTemp.TabIndex = 89;
+            this.nudEndingTemp.Value = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label10.Location = new System.Drawing.Point(16, 80);
+            this.label10.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(187, 20);
+            this.label10.TabIndex = 88;
+            this.label10.Text = "Ending Temperature [C]";
+            this.label10.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // btnSetTarget
+            // 
+            this.btnSetTarget.Font = new System.Drawing.Font("Calibri", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSetTarget.Location = new System.Drawing.Point(403, 32);
+            this.btnSetTarget.Name = "btnSetTarget";
+            this.btnSetTarget.Size = new System.Drawing.Size(53, 34);
+            this.btnSetTarget.TabIndex = 87;
+            this.btnSetTarget.Text = "Set";
+            this.btnSetTarget.UseVisualStyleBackColor = true;
+            this.btnSetTarget.Click += new System.EventHandler(this.btnSetTarget_Click);
+            // 
+            // nudRampRate
+            // 
+            this.nudRampRate.DecimalPlaces = 1;
+            this.nudRampRate.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.nudRampRate.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
+            this.nudRampRate.Location = new System.Drawing.Point(652, 31);
+            this.nudRampRate.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.nudRampRate.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
+            this.nudRampRate.Name = "nudRampRate";
+            this.nudRampRate.Size = new System.Drawing.Size(153, 26);
+            this.nudRampRate.TabIndex = 86;
+            this.nudRampRate.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            // 
+            // nudStartingTemp
+            // 
+            this.nudStartingTemp.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.nudStartingTemp.Location = new System.Drawing.Point(235, 33);
+            this.nudStartingTemp.Name = "nudStartingTemp";
+            this.nudStartingTemp.Size = new System.Drawing.Size(153, 26);
+            this.nudStartingTemp.TabIndex = 83;
+            this.nudStartingTemp.Value = new decimal(new int[] {
+            20,
+            0,
+            0,
+            0});
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label13.Location = new System.Drawing.Point(13, 37);
+            this.label13.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(194, 20);
+            this.label13.TabIndex = 64;
+            this.label13.Text = "Starting Temperature [C]";
+            this.label13.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // label14
+            // 
+            this.label14.AutoSize = true;
+            this.label14.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label14.Location = new System.Drawing.Point(476, 33);
+            this.label14.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.label14.Name = "label14";
+            this.label14.Size = new System.Drawing.Size(152, 20);
+            this.label14.TabIndex = 66;
+            this.label14.Text = "Ramp Rate [C/min]";
+            this.label14.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // groupBox3
             // 
@@ -903,23 +1071,24 @@
             // chartWaveform
             // 
             this.chartWaveform.BorderlineColor = System.Drawing.Color.Black;
-            chartArea4.Name = "ChartArea1";
-            this.chartWaveform.ChartAreas.Add(chartArea4);
-            legend4.Name = "Legend1";
-            this.chartWaveform.Legends.Add(legend4);
+            chartArea1.Name = "ChartArea1";
+            this.chartWaveform.ChartAreas.Add(chartArea1);
+            legend1.Name = "Legend1";
+            this.chartWaveform.Legends.Add(legend1);
             this.chartWaveform.Location = new System.Drawing.Point(8, 33);
             this.chartWaveform.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.chartWaveform.Name = "chartWaveform";
-            series4.ChartArea = "ChartArea1";
-            series4.Legend = "Legend1";
-            series4.Name = "Series1";
-            this.chartWaveform.Series.Add(series4);
+            series1.ChartArea = "ChartArea1";
+            series1.Legend = "Legend1";
+            series1.Name = "Series1";
+            this.chartWaveform.Series.Add(series1);
             this.chartWaveform.Size = new System.Drawing.Size(823, 615);
             this.chartWaveform.TabIndex = 39;
             this.chartWaveform.Text = "chart2";
             // 
             // groupBox6
             // 
+            this.groupBox6.Controls.Add(this.chkPlotWaveform);
             this.groupBox6.Controls.Add(this.lbLegendMax);
             this.groupBox6.Controls.Add(this.lbLegendMin);
             this.groupBox6.Controls.Add(this.lbColumn);
@@ -937,6 +1106,21 @@
             this.groupBox6.TabIndex = 44;
             this.groupBox6.TabStop = false;
             this.groupBox6.Text = "Microplate Chart";
+            // 
+            // chkPlotWaveform
+            // 
+            this.chkPlotWaveform.AutoSize = true;
+            this.chkPlotWaveform.Checked = true;
+            this.chkPlotWaveform.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkPlotWaveform.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F);
+            this.chkPlotWaveform.Location = new System.Drawing.Point(289, 30);
+            this.chkPlotWaveform.Name = "chkPlotWaveform";
+            this.chkPlotWaveform.Size = new System.Drawing.Size(150, 24);
+            this.chkPlotWaveform.TabIndex = 53;
+            this.chkPlotWaveform.Text = "Plot Waveforms";
+            this.chkPlotWaveform.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.chkPlotWaveform.UseVisualStyleBackColor = true;
+            this.chkPlotWaveform.CheckedChanged += new System.EventHandler(this.chkPlotWaveform_CheckedChanged);
             // 
             // lbLegendMax
             // 
@@ -1001,17 +1185,17 @@
             // 
             // chartLegend
             // 
-            chartArea5.Name = "ChartArea1";
-            this.chartLegend.ChartAreas.Add(chartArea5);
-            legend5.Name = "Legend1";
-            this.chartLegend.Legends.Add(legend5);
+            chartArea2.Name = "ChartArea1";
+            this.chartLegend.ChartAreas.Add(chartArea2);
+            legend2.Name = "Legend1";
+            this.chartLegend.Legends.Add(legend2);
             this.chartLegend.Location = new System.Drawing.Point(83, 588);
             this.chartLegend.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.chartLegend.Name = "chartLegend";
-            series5.ChartArea = "ChartArea1";
-            series5.Legend = "Legend1";
-            series5.Name = "Series1";
-            this.chartLegend.Series.Add(series5);
+            series2.ChartArea = "ChartArea1";
+            series2.Legend = "Legend1";
+            series2.Name = "Series1";
+            this.chartLegend.Series.Add(series2);
             this.chartLegend.Size = new System.Drawing.Size(400, 63);
             this.chartLegend.TabIndex = 38;
             this.chartLegend.Text = "chart1";
@@ -1043,17 +1227,17 @@
             // 
             // chartResultMap
             // 
-            chartArea6.Name = "ChartArea1";
-            this.chartResultMap.ChartAreas.Add(chartArea6);
-            legend6.Name = "Legend1";
-            this.chartResultMap.Legends.Add(legend6);
+            chartArea3.Name = "ChartArea1";
+            this.chartResultMap.ChartAreas.Add(chartArea3);
+            legend3.Name = "Legend1";
+            this.chartResultMap.Legends.Add(legend3);
             this.chartResultMap.Location = new System.Drawing.Point(8, 48);
             this.chartResultMap.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.chartResultMap.Name = "chartResultMap";
-            series6.ChartArea = "ChartArea1";
-            series6.Legend = "Legend1";
-            series6.Name = "Series1";
-            this.chartResultMap.Series.Add(series6);
+            series3.ChartArea = "ChartArea1";
+            series3.Legend = "Legend1";
+            series3.Name = "Series1";
+            this.chartResultMap.Series.Add(series3);
             this.chartResultMap.Size = new System.Drawing.Size(864, 532);
             this.chartResultMap.TabIndex = 0;
             this.chartResultMap.Text = "chart1";
@@ -1062,13 +1246,186 @@
             // 
             // tabResults
             // 
+            this.tabResults.Controls.Add(this.groupBox7);
+            this.tabResults.Controls.Add(this.groupBox5);
             this.tabResults.Location = new System.Drawing.Point(4, 38);
             this.tabResults.Name = "tabResults";
-            this.tabResults.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabResults.Padding = new System.Windows.Forms.Padding(3);
             this.tabResults.Size = new System.Drawing.Size(1752, 677);
             this.tabResults.TabIndex = 2;
             this.tabResults.Text = "Results";
             this.tabResults.UseVisualStyleBackColor = true;
+            // 
+            // groupBox7
+            // 
+            this.groupBox7.Controls.Add(this.chartThermal);
+            this.groupBox7.Location = new System.Drawing.Point(896, 4);
+            this.groupBox7.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.groupBox7.Name = "groupBox7";
+            this.groupBox7.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.groupBox7.Size = new System.Drawing.Size(839, 657);
+            this.groupBox7.TabIndex = 46;
+            this.groupBox7.TabStop = false;
+            this.groupBox7.Text = "Thermal Ramp";
+            // 
+            // chartThermal
+            // 
+            this.chartThermal.BorderlineColor = System.Drawing.Color.Black;
+            chartArea4.Name = "ChartArea1";
+            this.chartThermal.ChartAreas.Add(chartArea4);
+            legend4.Name = "Legend1";
+            this.chartThermal.Legends.Add(legend4);
+            this.chartThermal.Location = new System.Drawing.Point(8, 33);
+            this.chartThermal.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.chartThermal.Name = "chartThermal";
+            series4.ChartArea = "ChartArea1";
+            series4.Legend = "Legend1";
+            series4.Name = "Series1";
+            this.chartThermal.Series.Add(series4);
+            this.chartThermal.Size = new System.Drawing.Size(823, 615);
+            this.chartThermal.TabIndex = 39;
+            this.chartThermal.Text = "chart2";
+            // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.label12);
+            this.groupBox5.Controls.Add(this.label15);
+            this.groupBox5.Controls.Add(this.label16);
+            this.groupBox5.Controls.Add(this.label17);
+            this.groupBox5.Controls.Add(this.label18);
+            this.groupBox5.Controls.Add(this.chart1);
+            this.groupBox5.Controls.Add(this.label20);
+            this.groupBox5.Controls.Add(this.cboThermalSelection);
+            this.groupBox5.Controls.Add(this.chartThermalMap);
+            this.groupBox5.Location = new System.Drawing.Point(3, 4);
+            this.groupBox5.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.groupBox5.Size = new System.Drawing.Size(887, 657);
+            this.groupBox5.TabIndex = 45;
+            this.groupBox5.TabStop = false;
+            this.groupBox5.Text = "Microplate Chart";
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(435, 603);
+            this.label12.MaximumSize = new System.Drawing.Size(107, 31);
+            this.label12.MinimumSize = new System.Drawing.Size(107, 31);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(107, 31);
+            this.label12.TabIndex = 52;
+            this.label12.Text = "Max";
+            this.label12.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // label15
+            // 
+            this.label15.AutoSize = true;
+            this.label15.Location = new System.Drawing.Point(3, 603);
+            this.label15.MaximumSize = new System.Drawing.Size(107, 31);
+            this.label15.MinimumSize = new System.Drawing.Size(107, 31);
+            this.label15.Name = "label15";
+            this.label15.Size = new System.Drawing.Size(107, 31);
+            this.label15.TabIndex = 51;
+            this.label15.Text = "Min";
+            this.label15.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // label16
+            // 
+            this.label16.AutoSize = true;
+            this.label16.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.label16.Location = new System.Drawing.Point(823, 603);
+            this.label16.MaximumSize = new System.Drawing.Size(57, 35);
+            this.label16.MinimumSize = new System.Drawing.Size(57, 35);
+            this.label16.Name = "label16";
+            this.label16.Size = new System.Drawing.Size(57, 35);
+            this.label16.TabIndex = 50;
+            this.label16.Text = "1";
+            this.label16.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // label17
+            // 
+            this.label17.AutoSize = true;
+            this.label17.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.label17.Location = new System.Drawing.Point(749, 603);
+            this.label17.MaximumSize = new System.Drawing.Size(57, 35);
+            this.label17.MinimumSize = new System.Drawing.Size(57, 35);
+            this.label17.Name = "label17";
+            this.label17.Size = new System.Drawing.Size(57, 35);
+            this.label17.TabIndex = 49;
+            this.label17.Text = "A";
+            this.label17.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // label18
+            // 
+            this.label18.AutoSize = true;
+            this.label18.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label18.Location = new System.Drawing.Point(603, 609);
+            this.label18.Name = "label18";
+            this.label18.Size = new System.Drawing.Size(128, 20);
+            this.label18.TabIndex = 48;
+            this.label18.Text = "Mouse Location";
+            this.label18.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // chart1
+            // 
+            chartArea5.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea5);
+            legend5.Name = "Legend1";
+            this.chart1.Legends.Add(legend5);
+            this.chart1.Location = new System.Drawing.Point(83, 588);
+            this.chart1.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.chart1.Name = "chart1";
+            series5.ChartArea = "ChartArea1";
+            series5.Legend = "Legend1";
+            series5.Name = "Series1";
+            this.chart1.Series.Add(series5);
+            this.chart1.Size = new System.Drawing.Size(400, 63);
+            this.chart1.TabIndex = 38;
+            this.chart1.Text = "chart1";
+            // 
+            // label20
+            // 
+            this.label20.AutoSize = true;
+            this.label20.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label20.Location = new System.Drawing.Point(445, 31);
+            this.label20.Name = "label20";
+            this.label20.Size = new System.Drawing.Size(151, 20);
+            this.label20.TabIndex = 33;
+            this.label20.Text = "Select Plot Display";
+            this.label20.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // cboThermalSelection
+            // 
+            this.cboThermalSelection.BackColor = System.Drawing.SystemColors.Window;
+            this.cboThermalSelection.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboThermalSelection.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.cboThermalSelection.FormattingEnabled = true;
+            this.cboThermalSelection.Location = new System.Drawing.Point(627, 27);
+            this.cboThermalSelection.Margin = new System.Windows.Forms.Padding(0);
+            this.cboThermalSelection.Name = "cboThermalSelection";
+            this.cboThermalSelection.Size = new System.Drawing.Size(227, 28);
+            this.cboThermalSelection.TabIndex = 32;
+            this.cboThermalSelection.Tag = "";
+            // 
+            // chartThermalMap
+            // 
+            chartArea6.Name = "ChartArea1";
+            this.chartThermalMap.ChartAreas.Add(chartArea6);
+            legend6.Name = "Legend1";
+            this.chartThermalMap.Legends.Add(legend6);
+            this.chartThermalMap.Location = new System.Drawing.Point(8, 48);
+            this.chartThermalMap.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.chartThermalMap.Name = "chartThermalMap";
+            series6.ChartArea = "ChartArea1";
+            series6.Legend = "Legend1";
+            series6.Name = "Series1";
+            this.chartThermalMap.Series.Add(series6);
+            this.chartThermalMap.Size = new System.Drawing.Size(864, 532);
+            this.chartThermalMap.TabIndex = 0;
+            this.chartThermalMap.Text = "chart1";
+            this.chartThermalMap.Click += new System.EventHandler(this.chartThermalMap_Click);
+            this.chartThermalMap.MouseMove += new System.Windows.Forms.MouseEventHandler(this.chartThermalMap_MouseMove);
             // 
             // toolStrip1
             // 
@@ -1098,7 +1455,7 @@
             this.toolStrip1.Location = new System.Drawing.Point(0, 648);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Padding = new System.Windows.Forms.Padding(0, 0, 2, 0);
-            this.toolStrip1.Size = new System.Drawing.Size(1283, 27);
+            this.toolStrip1.Size = new System.Drawing.Size(1643, 27);
             this.toolStrip1.TabIndex = 6;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -1218,131 +1575,11 @@
             this.textHeatsink.Name = "textHeatsink";
             this.textHeatsink.Size = new System.Drawing.Size(100, 27);
             // 
-            // groupBox4
-            // 
-            this.groupBox4.Controls.Add(this.nudEndingTemp);
-            this.groupBox4.Controls.Add(this.label10);
-            this.groupBox4.Controls.Add(this.btnSetTarget);
-            this.groupBox4.Controls.Add(this.nudRampRate);
-            this.groupBox4.Controls.Add(this.nudStartingTemp);
-            this.groupBox4.Controls.Add(this.label13);
-            this.groupBox4.Controls.Add(this.label14);
-            this.groupBox4.Location = new System.Drawing.Point(3, 460);
-            this.groupBox4.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.groupBox4.Size = new System.Drawing.Size(811, 108);
-            this.groupBox4.TabIndex = 82;
-            this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "Temperature Parameters";
-            // 
-            // nudRampRate
-            // 
-            this.nudRampRate.DecimalPlaces = 1;
-            this.nudRampRate.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.nudRampRate.Increment = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
-            this.nudRampRate.Location = new System.Drawing.Point(652, 31);
-            this.nudRampRate.Maximum = new decimal(new int[] {
-            10,
-            0,
-            0,
-            0});
-            this.nudRampRate.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
-            this.nudRampRate.Name = "nudRampRate";
-            this.nudRampRate.Size = new System.Drawing.Size(153, 26);
-            this.nudRampRate.TabIndex = 86;
-            this.nudRampRate.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            // 
-            // nudStartingTemp
-            // 
-            this.nudStartingTemp.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.nudStartingTemp.Location = new System.Drawing.Point(235, 33);
-            this.nudStartingTemp.Name = "nudStartingTemp";
-            this.nudStartingTemp.Size = new System.Drawing.Size(153, 26);
-            this.nudStartingTemp.TabIndex = 83;
-            this.nudStartingTemp.Value = new decimal(new int[] {
-            20,
-            0,
-            0,
-            0});
-            // 
-            // label13
-            // 
-            this.label13.AutoSize = true;
-            this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label13.Location = new System.Drawing.Point(13, 37);
-            this.label13.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(194, 20);
-            this.label13.TabIndex = 64;
-            this.label13.Text = "Starting Temperature [C]";
-            this.label13.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // label14
-            // 
-            this.label14.AutoSize = true;
-            this.label14.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label14.Location = new System.Drawing.Point(476, 33);
-            this.label14.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.label14.Name = "label14";
-            this.label14.Size = new System.Drawing.Size(152, 20);
-            this.label14.TabIndex = 66;
-            this.label14.Text = "Ramp Rate [C/min]";
-            this.label14.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // btnSetTarget
-            // 
-            this.btnSetTarget.Font = new System.Drawing.Font("Calibri", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnSetTarget.Location = new System.Drawing.Point(403, 32);
-            this.btnSetTarget.Name = "btnSetTarget";
-            this.btnSetTarget.Size = new System.Drawing.Size(53, 34);
-            this.btnSetTarget.TabIndex = 87;
-            this.btnSetTarget.Text = "Set";
-            this.btnSetTarget.UseVisualStyleBackColor = true;
-            this.btnSetTarget.Click += new System.EventHandler(this.btnSetTarget_Click);
-            // 
-            // label10
-            // 
-            this.label10.AutoSize = true;
-            this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label10.Location = new System.Drawing.Point(16, 80);
-            this.label10.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(187, 20);
-            this.label10.TabIndex = 88;
-            this.label10.Text = "Ending Temperature [C]";
-            this.label10.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // nudEndingTemp
-            // 
-            this.nudEndingTemp.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.nudEndingTemp.Location = new System.Drawing.Point(234, 74);
-            this.nudEndingTemp.Name = "nudEndingTemp";
-            this.nudEndingTemp.Size = new System.Drawing.Size(153, 26);
-            this.nudEndingTemp.TabIndex = 89;
-            this.nudEndingTemp.Value = new decimal(new int[] {
-            100,
-            0,
-            0,
-            0});
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1283, 675);
+            this.ClientSize = new System.Drawing.Size(1643, 675);
             this.Controls.Add(this.toolStrip1);
             this.Controls.Add(this.tabControl);
             this.Controls.Add(this.toolStrip);
@@ -1359,6 +1596,11 @@
             this.toolStrip.PerformLayout();
             this.tabControl.ResumeLayout(false);
             this.tabAssayProtocol.ResumeLayout(false);
+            this.groupBox4.ResumeLayout(false);
+            this.groupBox4.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudEndingTemp)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudRampRate)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudStartingTemp)).EndInit();
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudDelay)).EndInit();
@@ -1385,13 +1627,15 @@
             this.groupBox6.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chartLegend)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.chartResultMap)).EndInit();
+            this.tabResults.ResumeLayout(false);
+            this.groupBox7.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.chartThermal)).EndInit();
+            this.groupBox5.ResumeLayout(false);
+            this.groupBox5.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chartThermalMap)).EndInit();
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
-            this.groupBox4.ResumeLayout(false);
-            this.groupBox4.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.nudRampRate)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudStartingTemp)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudEndingTemp)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -1495,6 +1739,21 @@
         private System.Windows.Forms.Label label14;
         private System.Windows.Forms.NumericUpDown nudEndingTemp;
         private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.ToolStripButton btnLoadConfig;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator10;
+        private System.Windows.Forms.CheckBox chkPlotWaveform;
+        private System.Windows.Forms.GroupBox groupBox7;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chartThermal;
+        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.Label label15;
+        private System.Windows.Forms.Label label16;
+        private System.Windows.Forms.Label label17;
+        private System.Windows.Forms.Label label18;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chart1;
+        private System.Windows.Forms.Label label20;
+        private System.Windows.Forms.ComboBox cboThermalSelection;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chartThermalMap;
     }
 }
 

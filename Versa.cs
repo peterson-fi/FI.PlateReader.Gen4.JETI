@@ -894,13 +894,13 @@ namespace FI.PlateReader.Gen4.JETI
             return true;
         }
 
-        public bool MoveReferencePosition()
+        public bool MoveReferencePosition(double colReference, double rowReference)
         {
             // Variables
-            bool error; 
+            bool error;
 
             // Move Column Stage
-            error = StepColumnMotor(info.ColumnOffset);
+            error = StepColumnMotor(colReference);  // info.ColumnOffset);
 
             if(error == false)
             {
@@ -908,7 +908,7 @@ namespace FI.PlateReader.Gen4.JETI
             }
 
             // Move Row Stage
-            error = StepRowMotor(info.RowOffset);
+            error = StepRowMotor(rowReference); // info.RowOffset);
 
             if(error == false)
             {

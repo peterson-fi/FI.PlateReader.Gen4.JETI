@@ -139,8 +139,9 @@ namespace FI.PlateReader.Gen4.JETI
         {
             info = new Info();
 
-            // Read default values from configuration file.
-            ReadConfigFile();
+            // Read default values from configuration file.   
+            string fname = "";
+            ReadConfigFile(fname);
 
             // Connect to Versa
             bool state = Connect();
@@ -149,7 +150,7 @@ namespace FI.PlateReader.Gen4.JETI
             if (state)
             {
                 // Download data from EEPROM 
-                state = DownloadData();
+                //state = DownloadData();
                 Disconnect();
             }
 
@@ -161,6 +162,32 @@ namespace FI.PlateReader.Gen4.JETI
             else
             {
                 DefaultValues();
+                return false;
+            }
+
+        }
+
+        public bool WriteData()
+        {
+            // Connect to Versa
+            //bool state = Connect();
+            bool state = false;
+            // Try to download the data
+            //if (state)
+            //{
+                // Download data from EEPROM 
+                state = UploadData();
+                //Disconnect();
+            //}
+
+            // Check if download was sucessfull
+            if (state)
+            {
+                return true;
+            }
+            else
+            {
+                //DefaultValues();
                 return false;
             }
 
@@ -202,6 +229,7 @@ namespace FI.PlateReader.Gen4.JETI
         {
             // Initialise array to Versa Memory size
             byte[] data = new byte[1792];
+            bool validData;
 
             // Use fixed statement to access managed data
             bool state = false;
@@ -210,6 +238,7 @@ namespace FI.PlateReader.Gen4.JETI
                 fixed (byte* dPointer = &data[0])
                 {
                     state = CheckError(Versa_downloadUserData(dPointer));
+                    validData = state;
                 }
             }
 
@@ -226,10 +255,71 @@ namespace FI.PlateReader.Gen4.JETI
             info.SpectrometerSerialNumber = BitConverter.ToInt32(data, 18);
 
             // Stage
-            info.RowOffset = BitConverter.ToSingle(data, 22);
-            info.ColumnOffset = BitConverter.ToSingle(data, 26);
-            info.RowEject = BitConverter.ToSingle(data, 30);
-            info.ColumnEject = BitConverter.ToSingle(data, 34);
+            float rowOffset = BitConverter.ToSingle(data, 22);
+            // check if offset is a valid number
+            if (rowOffset == float.NaN) { validData = false; }
+            else
+            {
+                // should change to max row travel?
+                if ((rowOffset >= 0) && (rowOffset < 200))
+                {
+                    info.RowOffset = rowOffset;
+                }
+                else
+                {
+                    info.RowOffset = 45.145;
+                    validData = false;
+                }
+            }
+
+            float columnOffset = BitConverter.ToSingle(data, 26);
+            // check if offset is a valid number
+            if (columnOffset == float.NaN) { validData = false; }
+            else
+            {
+                // should change to max row travel?
+                if ((columnOffset >= 0) && (columnOffset < 200))
+                {
+                    info.ColumnOffset = columnOffset;
+                }
+                else
+                {
+                    info.ColumnOffset = -3.465;
+                    validData = false;
+                }
+            }
+            float rowEject = BitConverter.ToSingle(data, 30);
+            // check if eject is a valid number
+            if (rowEject == float.NaN) { validData = false; }
+            else
+            {
+                // should change to max row travel?
+                if ((rowEject >= 0) && (rowEject < 200))
+                {
+                    info.RowEject = rowEject;
+                }
+                else
+                {
+                    info.RowEject = 10;
+                    validData = false;
+                }
+            }
+            float columnEject = BitConverter.ToSingle(data, 34);
+            // check if eject is a valid number
+            if (columnEject == float.NaN) { validData = false; }
+            else
+            {
+                // should change to max row travel?
+                if ((columnEject >= 0) && (rowEject < 200))
+                {
+                    info.ColumnEject = columnEject;
+                }
+                else
+                {
+                    info.ColumnEject = 10;
+                    validData = false;
+                }
+            }
 
             // Round values to two decimal places
             info.RowOffset = Math.Round(info.RowOffset, 2);
@@ -269,13 +359,69 @@ namespace FI.PlateReader.Gen4.JETI
             info.PixelLength = BitConverter.ToInt32(data, 90);
 
             // Wavelength Correction
-            info.WavelengthCorrection = new double[400];
+            info.WavelengthCorrection = new double[412];
             int startByte = 94;
 
-            for(int i = 0; i < 400; i++)
+            for(int i = 0; i < 412; i++)
             {
                 info.WavelengthCorrection[i] = BitConverter.ToSingle(data, i * 4 + startByte);
             }
+
+            //// Read row motor reverse
+            //int rowmotorReverse = BitConverter.ToInt32(data, 1742);
+            //if (rowmotorReverse == 0) { info.RowMotorReverse = false; }
+            //else { info.RowMotorReverse = true; }
+
+            //// Read row motor current
+            //int rowmotorCurrent = BitConverter.ToInt32(data, 1746);
+            //if (rowmotorCurrent < 50) { rowmotorCurrent = 50; }
+            //else if (rowmotorCurrent > 1800) { rowmotorCurrent = 1800; }
+            //info.RowCurrent = rowmotorCurrent;
+
+            //// Read row motor microstep
+            //int rowmotorMicrostep = BitConverter.ToInt32(data, 1750);
+            //if ((rowmotorMicrostep == 1) | (rowmotorMicrostep == 2) | (rowmotorMicrostep == 4) | (rowmotorMicrostep == 8) | (rowmotorMicrostep == 16) | (rowmotorMicrostep == 32) | (rowmotorMicrostep == 64))
+            //{
+            //}
+            //else
+            //{
+            //    rowmotorMicrostep = 8;
+            //}    
+            //info.RowMicrostep = rowmotorMicrostep;
+
+            //// Read row motor units
+            //float rowmotorUnits = BitConverter.ToSingle(data, 1754);
+            //if (rowmotorUnits < 10) { rowmotorUnits = 10; }
+            //else if (rowmotorUnits > 1000) { rowmotorUnits = 1000; }
+            //info.RowUnitsPerRev = rowmotorUnits;
+
+            //// Read column motor reverse
+            //int colmotorReverse = BitConverter.ToInt32(data, 1758);
+            //if (colmotorReverse == 0) { info.ColumnMotorReverse = false; }
+            //else { info.ColumnMotorReverse = true; }
+
+            //// Read column motor current
+            //int colmotorCurrent = BitConverter.ToInt32(data, 1762);
+            //if (colmotorCurrent < 50) { colmotorCurrent = 50; }
+            //else if (colmotorCurrent > 1800) { colmotorCurrent = 1800; }
+            //info.ColumnCurrent = colmotorCurrent;
+
+            //// Read column motor microstep
+            //int colmotorMicrostep = BitConverter.ToInt32(data, 1766);
+            //if ((colmotorMicrostep == 1) | (colmotorMicrostep == 2) | (colmotorMicrostep == 4) | (colmotorMicrostep == 8) | (colmotorMicrostep == 16) | (colmotorMicrostep == 32) | (colmotorMicrostep == 64))
+            //{
+            //}
+            //else
+            //{
+            //    colmotorMicrostep = 8;
+            //}
+            //info.ColumnMicrostep = colmotorMicrostep;
+
+            //// Read column motor units
+            //float colmotorUnits = BitConverter.ToSingle(data, 1770);
+            //if (colmotorUnits < 10) { colmotorUnits = 10; }
+            //else if (colmotorUnits > 1000) { colmotorUnits = 1000; }
+            //info.ColumnUnitsPerRev = colmotorUnits;
 
             // Create Wavelength
             info.Wavelength = new double[info.NPixel];
@@ -305,6 +451,138 @@ namespace FI.PlateReader.Gen4.JETI
 
             info.WavelengthStart = Math.Floor(info.Wavelength[info.StartPixel]);
             info.WavelengthEnd = Math.Floor(info.Wavelength[info.StartPixel + info.PixelLength]);
+
+            // Check Values
+            if (state)
+            {
+                return CheckValues();
+            }
+            else
+            {
+                return false;
+            }
+
+        }
+
+        public bool UploadData()
+        {
+            // From string to byte array
+            byte[] uData = new byte[1792];       //128
+
+            // if name is longer than 10 characters, truncate to fixed 10 characters
+            if (info.InstrumentName.Length > 10) { info.InstrumentName = info.InstrumentName.Substring(0, 10); }
+            byte[] name = Encoding.ASCII.GetBytes(info.InstrumentName);
+            name.CopyTo(uData, 0);
+
+            byte[] sn = BitConverter.GetBytes(info.InstrumentSerialNumber);
+            sn.CopyTo(uData, 10);
+
+            byte[] ledSN = BitConverter.GetBytes(info.LEDSerialNumber);
+            ledSN.CopyTo(uData, 14);
+
+            byte[] specSN = BitConverter.GetBytes(info.SpectrometerSerialNumber);
+            specSN.CopyTo(uData, 18);
+
+            byte[] roffset = BitConverter.GetBytes((float)info.RowOffset);
+            roffset.CopyTo(uData, 22);
+
+            byte[] coffset = BitConverter.GetBytes((float)info.ColumnOffset);
+            coffset.CopyTo(uData, 26);
+
+            byte[] reject = BitConverter.GetBytes((float)info.RowEject);
+            reject.CopyTo(uData, 30);
+
+            byte[] ceject = BitConverter.GetBytes((float)info.ColumnEject);
+            ceject.CopyTo(uData, 34);
+
+            byte[] rdir = BitConverter.GetBytes(info.RowDirection);
+            rdir.CopyTo(uData, 38);
+
+            byte[] cdir = BitConverter.GetBytes(info.ColumnDirection);
+            cdir.CopyTo(uData, 42);
+
+            byte[] ledPulse = BitConverter.GetBytes(info.LEDPulse);
+            ledPulse.CopyTo(uData, 46);
+
+            byte[] ledWL = BitConverter.GetBytes(info.LEDWavelength);
+            ledWL.CopyTo(uData, 50);
+
+            byte[] ledMax = BitConverter.GetBytes(info.MaxCurrent);
+            ledMax.CopyTo(uData, 54);
+
+            byte[] instGain = BitConverter.GetBytes((float)info.SpectrometerGain);
+            instGain.CopyTo(uData, 58);
+
+            byte[] pixels = BitConverter.GetBytes(info.NPixel);
+            pixels.CopyTo(uData, 62);
+
+            byte[] p0 = BitConverter.GetBytes((float)info.P0);
+            p0.CopyTo(uData, 66);
+
+            byte[] p1 = BitConverter.GetBytes((float)info.P1);
+            p1.CopyTo(uData, 70);
+
+            byte[] p2 = BitConverter.GetBytes((float)info.P2);
+            p2.CopyTo(uData, 74);
+
+            byte[] p3 = BitConverter.GetBytes((float)info.P3);
+            p3.CopyTo(uData, 78);
+
+            byte[] p4 = BitConverter.GetBytes((float)info.P4);
+            p4.CopyTo(uData, 82);
+
+            byte[] cStart = BitConverter.GetBytes(info.StartPixel);
+            cStart.CopyTo(uData, 86);
+
+            byte[] cLength = BitConverter.GetBytes(info.PixelLength);
+            cLength.CopyTo(uData, 90);
+
+            for (int n = 0; n < info.PixelLength; n++)
+            {
+                byte[] cValue = BitConverter.GetBytes((float)info.WavelengthCorrection[n]);
+                cValue.CopyTo(uData, 94 + (4 * n));
+            }
+
+            // Write row motor reverse
+            byte[] rowReverse = BitConverter.GetBytes(info.RowMotorReverse);
+            rowReverse.CopyTo(uData, 1742);
+
+            // Write row motor current
+            byte[] rowCurrent = BitConverter.GetBytes(info.RowCurrent);
+            rowCurrent.CopyTo(uData, 1746);
+
+            // Write row motor microstep
+            byte[] rowMicrostep = BitConverter.GetBytes(info.RowMicrostep);
+            rowMicrostep.CopyTo(uData, 1750);
+
+            // Read row motor units
+            byte[] rowUnits = BitConverter.GetBytes((float)info.RowUnitsPerRev);
+            rowUnits.CopyTo(uData, 1754);
+
+            // Write row motor reverse
+            byte[] columnReverse = BitConverter.GetBytes(info.RowMotorReverse);
+            columnReverse.CopyTo(uData, 1758);
+
+            // Write row motor current
+            byte[] columnCurrent = BitConverter.GetBytes(info.RowCurrent);
+            columnCurrent.CopyTo(uData, 1762);
+
+            // Write row motor microstep
+            byte[] columnMicrostep = BitConverter.GetBytes(info.RowMicrostep);
+            columnMicrostep.CopyTo(uData, 1766);
+
+            // Read row motor units
+            byte[] columnUnits = BitConverter.GetBytes((float)info.RowUnitsPerRev);
+            columnUnits.CopyTo(uData, 1770);
+
+            bool state = false;
+            unsafe
+            {
+                fixed (byte* dPointer = &uData[0])
+                {
+                    state = CheckError(Versa_uploadUserData(dPointer));
+                };
+            }
 
             // Check Values
             if (state)
@@ -385,18 +663,35 @@ namespace FI.PlateReader.Gen4.JETI
             info.WavelengthEnd = info.Wavelength[info.StartPixel + info.PixelLength];
         }
 
-        public void ReadConfigFile()
+        public void ReadConfigFile(string configfile)
         {
             info = new Info();
 
-            // Read Config Files
-            // Get plate configuration filename
             string filepath;
-            string filename = "SUPR-CM_Default.scfgx";
+            string filename;
+
+            // check if configFile is empty string. If it is, load default
+            if (String.IsNullOrEmpty(configfile))
+            {
+                filename = "SUPR-CM_Default.scfgx";
+            }
+            else
+            {
+                filename = configfile;
+            }
 
             filepath = Directory.GetCurrentDirectory();
             filepath = Path.GetFullPath(Path.Combine(filepath, @"../../../"));
             filename = Path.Combine(filepath, "configurationFiles", filename);
+
+            // check if file exist
+            bool fcheck = File.Exists(filename);
+            if (!fcheck)
+            {
+                MessageBox.Show("Configuration file does not exist!");
+                return;
+            }
+            
 
             // Read File
             List<string> Values = new List<string>();
@@ -469,7 +764,7 @@ namespace FI.PlateReader.Gen4.JETI
                 info.P2 = Convert.ToDouble(Values[50]);
                 info.P3 = Convert.ToDouble(Values[51]);
                 info.P4 = Convert.ToDouble(Values[52]);
-            
+           
                 // Create Wavelength
                 info.Wavelength = new double[info.NPixel];
 

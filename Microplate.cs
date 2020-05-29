@@ -65,7 +65,7 @@ namespace FI.PlateReader.Gen4.JETI
                 Wells = 96,
                 Row = 8,
                 Column = 12,
-                ColumnOffset = 9.88,    //14.38,
+                ColumnOffset = 14.38,
                 ColumnSpacing = 9,
                 RowOffset = 11.24,
                 RowSpacing = 9,
@@ -79,7 +79,7 @@ namespace FI.PlateReader.Gen4.JETI
                 Wells = 384,
                 Row = 16,
                 Column = 24,
-                ColumnOffset = 7.63,    //12.13,
+                ColumnOffset = 12.13,
                 ColumnSpacing = 4.5,
                 RowOffset = 8.99,
                 RowSpacing = 4.5,
@@ -93,7 +93,7 @@ namespace FI.PlateReader.Gen4.JETI
                 Wells = 1536,
                 Row = 32,
                 Column = 48,
-                ColumnOffset = 6.5005,  //11.005,
+                ColumnOffset = 11.005,
                 ColumnSpacing = 2.25,
                 RowOffset = 7.865,
                 RowSpacing = 2.25,
@@ -122,16 +122,16 @@ namespace FI.PlateReader.Gen4.JETI
                 MotorList.Add(new Motor());
 
                 // Get the row and column positions for each individual well
-                double[] rowPositon = new double[PlateList[i].Row];
+                double[] rowPosition = new double[PlateList[i].Row];
                 double[] columnPosition = new double[PlateList[i].Column];
 
-                GetPosition(i, ref rowPositon, ref columnPosition);
+                GetPosition(i, ref rowPosition, ref columnPosition);
 
                 // Add info to Class
-                MotorList[i].RowReference = info.RowOffset;
-                MotorList[i].ColumnReference = info.ColumnOffset;
+                MotorList[i].RowReference = rowPosition[0];     //info.RowOffset;
+                MotorList[i].ColumnReference = columnPosition[0] - info.ColumnDirection*(PlateList[i].ColumnSpacing);   // info.ColumnOffset;
 
-                MotorList[i].RowPosition = rowPositon;
+                MotorList[i].RowPosition = rowPosition;
                 MotorList[i].ColumnPosition = columnPosition;
 
             }

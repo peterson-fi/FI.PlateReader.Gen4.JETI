@@ -1,4 +1,4 @@
-InstrumentName	SUPR-TM
+InstrumentName	SUPR-CM
 SerialNumber	10001
 LEDSerialNumber	2750001
 SpecSerialNumber	149806
@@ -41,7 +41,7 @@ ColumnPositionError	0.15
 ColumnSpeed	100
 ColumnAcceleration	1000
 ColumnAccurateHome	FALSE
-DetectorName	JETI
+DetectorName	LineScan
 DetectorGain	1
 Pixels	2048
 PostIntegrationWait	88

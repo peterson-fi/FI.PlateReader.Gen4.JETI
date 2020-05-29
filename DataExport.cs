@@ -83,6 +83,8 @@ namespace FI.PlateReader.Gen4.JETI
             if (Save)
             {
                 SpectrometerScanExport();
+
+                SpectrometerThermalExport();
             }
         }
 
@@ -202,6 +204,53 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Write Waveform
             WriteScan(fnameWaveform);
+        }
+
+        public void SpectrometerThermalExport()
+        {
+            // Variables
+            string fnameTemp = "";
+            string fnameBlock = "";
+
+            // Create Filename
+            string dirSub = Path.Combine(Filepath, Filename);
+
+            if (Directory.Exists(dirSub) == false)
+                System.IO.Directory.CreateDirectory(dirSub);
+
+            fnameTemp = Filename + "_Thermal.txt";
+            fnameBlock = Path.Combine(dirSub, fnameTemp);
+
+
+            // Write out Header information
+            WritePlateHeaderSpectrometer(fnameBlock);
+            string[] param;
+
+            // 1st Block of Data: Intensity A
+            param = new string[2];
+            param[0] = "Intensity A";
+            param[1] = analysisParameters.WavelengthA.ToString();
+            WriteThermalBlock(fnameBlock, param, block.Temperature, block.IntensityA);
+
+            // 2nd Block of Data: Intensity B
+            param = new string[2];
+            param[0] = "Intensity B";
+            param[1] = analysisParameters.WavelengthB.ToString();
+            WriteThermalBlock(fnameBlock, param, block.Temperature, block.IntensityB);
+
+            // 3rd Block of Data: Ratio
+            param = new string[2];
+            param[0] = "Ratio";
+            param[1] = analysisParameters.WavelengthA.ToString() + "/" + analysisParameters.WavelengthB.ToString();
+            WriteThermalBlock(fnameBlock, param, block.Temperature, block.Ratio);
+
+            // 4th Block of Data: Moment
+            param = new string[2];
+            param[0] = "Moment";
+            param[1] = analysisParameters.MomentA.ToString() + "-" + analysisParameters.MomentB.ToString();
+            WriteThermalBlock(fnameBlock, param, block.Temperature, block.Moment);
+
+
         }
 
         public void SpectrometerImageExport(string wellName)
@@ -470,6 +519,99 @@ namespace FI.PlateReader.Gen4.JETI
 
                 file.WriteLine();
 
+            }
+        }
+
+        private void WriteThermalBlock(string filename, string[] parameter, double[][] temperature, double[][] data)
+        {
+            // Variables
+            string line;
+            int count;
+            int nscan = data.Length;
+            int nwell = data[0].Length;
+
+            int row_index = 0;
+            int col_index = 0;
+
+            // Loop through Data
+            for (int i = 0; i < plate.Row; i++)
+            {
+                // Skip inactive Row
+                if (ActiveRow[i])
+                {
+                    row_index = i;
+                    break;
+                }
+            }
+
+            for (int j = 0; j < plate.Column; j++)
+            {
+                // Skip inactive Column
+                if (ActiveColumn[j])
+                {
+                    col_index = j;
+                    break;
+                }                 
+            }
+
+            int tmp_index = plate.Column * row_index + col_index;
+
+            using (StreamWriter file = File.AppendText(@filename))
+            {
+                line = string.Format("{0}\t{1}\t{2}\t", "Parameter", parameter[0], parameter[1]);
+                file.WriteLine(line);
+
+                line = string.Format("{0}\t{1}\t{2}\t", "Row", "Column", "dT");
+                file.Write(line);
+
+                //line = string.Format("{0}\t", "");
+                //file.Write(line);
+
+                // Write out the temperature
+                for (int i = 0; i < nscan; i++)
+                {
+                    line = string.Format("{0}\t", temperature[i][tmp_index]);
+                    file.Write(line);
+                }
+                file.Write("\n");
+
+                // Loop through the data
+                count = 0;
+
+                // Loop through Data
+                int index = 0;
+                for (int i = 0; i < plate.Row; i++)
+                {
+                    // Skip inactive Row
+                    if (!ActiveRow[i])
+                        continue;
+
+                    for (int j = 0; j < plate.Column; j++)
+                    {
+                        // Skip inactive Column
+                        if (!ActiveColumn[j])
+                            continue;
+
+                        string row = ConvertRow(i);
+                        int column = j + 1;
+
+                        line = string.Format("{0}\t{1}\t", row, column);
+                        file.Write(line);
+
+                        index = plate.Column * i + j;
+
+                        double dt = temperature[0][index] - temperature[0][tmp_index];
+                        line = string.Format("{0}\t", dt);
+                        file.Write(line);
+                        
+                        for (int k = 0; k < nscan; k++)
+                        {
+                            file.Write(data[k][index] + "\t");
+                        }
+                        
+                        file.WriteLine();
+                    }
+                }
             }
         }
 

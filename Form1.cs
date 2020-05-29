@@ -36,6 +36,7 @@ namespace FI.PlateReader.Gen4.JETI
         DataExport dataExport = new DataExport();       // Data Export
 
         Settings.Info info;
+        bool PlotWaveforms = true;
 
         // Delegates
         delegate void voidDelegate();
@@ -78,9 +79,6 @@ namespace FI.PlateReader.Gen4.JETI
             charting.CreateChartSettings();
             charting.CreateColors();
 
-            // Populate the Form with initial values 
-            PopulateForm();
-
             tokenSourceLabel = new CancellationTokenSource();
             CancellationToken token = tokenSourceLabel.Token;
             Task.Factory.StartNew(() => LabelTask(token), token);
@@ -95,6 +93,8 @@ namespace FI.PlateReader.Gen4.JETI
                 StateReset();
             }
 
+            // Populate the Form with initial values 
+            PopulateForm();
         }
 
         public bool ReadConfigFiles()
@@ -357,7 +357,7 @@ namespace FI.PlateReader.Gen4.JETI
                         Task.Factory.StartNew(() => RealTimeData(token), token);
                         break;
                     case 3:
-                        if (info.Detector == "LineScan")
+                        if ((info.Detector == "LineScan") & (info.RowScan))
                         {
                             Task.Factory.StartNew(() => WellImage(token), token);
                         }
@@ -493,6 +493,7 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Update Form
             cboPlotSelection.Items.Clear();
+            cboThermalSelection.Items.Clear();
 
             List<string> value = new List<string>();
 
@@ -503,9 +504,14 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Plot Selection Combo Box
             foreach (var x in value)
+            {
                 cboPlotSelection.Items.Add(x);
+                cboThermalSelection.Items.Add(x);
+            }
+                
 
             cboPlotSelection.SelectedIndex = 0;
+            cboThermalSelection.SelectedIndex = 0;
 
             // Clear Well selection labels
             lbRowWellSelection.Text = "";
@@ -699,13 +705,16 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Plate Scan Tasks
             instrument.ActiveScan = true;
-            versa.SetScanHandles();
+            if (info.Detector == "LineScan")
+            {
+                versa.SetScanHandles();
+            }
 
             // Start stopwatch
             time.StartScanStopwatch();
 
             // Move to start position
-            bool error = versa.MoveReferencePosition();
+            bool error = versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
             if (!error)
             {
@@ -714,12 +723,12 @@ namespace FI.PlateReader.Gen4.JETI
             }
 
             // Background measurement
-            instrument.SetInstrumentStatus(8);
-            versa.SetIntegrationTime();
+            instrument.SetInstrumentStatus(8);            
 
             switch (info.Detector)
             {
                 case "LineScan":
+                    versa.SetIntegrationTime();
                     error = versa.DarkMeasurement();
                     break;
                 case "JETI":
@@ -748,8 +757,14 @@ namespace FI.PlateReader.Gen4.JETI
             instrument.SetInstrumentStatus(9);
 
             // Measure microplate (token, scan)
-            if (info.RowScan) { error = MeasurePlate(token, 0); }
-            else { error = MeasurePlateStatic(token, 0); }
+            if ((info.Detector == "LineScan") & (info.RowScan))
+            {
+                error = MeasurePlate(token, 0);
+            }
+            else
+            {
+                error = MeasurePlateStatic(token, 0);
+            }
             
 
             // End Plate Tasks
@@ -769,7 +784,7 @@ namespace FI.PlateReader.Gen4.JETI
             if (error)
             {
                 // Move Back to Reference Position
-                versa.MoveReferencePosition();
+                versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
                 // Instrument State
                 StateDeviceActive();
@@ -808,8 +823,11 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Plate Scan Tasks
             instrument.ActiveScan = true;
-            versa.SetScanHandles();
-
+            if (info.Detector == "LineScan")
+            {
+                versa.SetScanHandles();
+            }
+ 
             // Start stopwatch
             time.StartScanStopwatch();
 
@@ -820,7 +838,7 @@ namespace FI.PlateReader.Gen4.JETI
             }
 
             // Move to start position
-            error = versa.MoveReferencePosition();
+            error = versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
             if (!error)
             {
@@ -830,11 +848,11 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Background measurement
             instrument.SetInstrumentStatus(8);
-            versa.SetIntegrationTime();
 
             switch (info.Detector)
             {
                 case "LineScan":
+                    versa.SetIntegrationTime();
                     error = versa.DarkMeasurement();
                     break;
                 case "JETI":
@@ -888,7 +906,7 @@ namespace FI.PlateReader.Gen4.JETI
                 instrument.CurrentScan = i;
 
                 // Measure microplate (token, scan)
-                if (info.RowScan) { error = MeasurePlate(token, i); }
+                if ((info.Detector == "LineScan") & (info.RowScan)) { error = MeasurePlate(token, i); }
                 else { error = MeasurePlateStatic(token, i); }
 
                 if (!error)
@@ -901,7 +919,7 @@ namespace FI.PlateReader.Gen4.JETI
                 SavePlate(i);
 
                 // Move back to reference position
-                error = versa.MoveReferencePosition();
+                error = versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
                 if (!error)
                 {
@@ -956,7 +974,7 @@ namespace FI.PlateReader.Gen4.JETI
             if (error)
             {
                 // Move Back to Reference Position
-                versa.MoveReferencePosition();
+                versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
                 // Instrument State
                 StateDeviceActive();
@@ -997,7 +1015,16 @@ namespace FI.PlateReader.Gen4.JETI
             double startColumnPosition = microplate.motor.ColumnPosition[startColumn];
             double endColumnPosition = microplate.motor.ColumnPosition[endColumn];
 
-            bool error = true; 
+            bool error = true;
+
+            // Get Current Temperature
+            if (ms.Connected)
+            {
+                ms.GetHeatsinkTemp();
+                time.Delay(10);
+                ms.GetObjectTemp();
+                time.Delay(10);
+            }
 
             // # of Rows
             for (int i = 0; i < row; i++)
@@ -1024,13 +1051,13 @@ namespace FI.PlateReader.Gen4.JETI
                 {
                     // Even Row (A,C,E...)
                     error = versa.StepColumnMotor(startColumnPosition);
-                    versa.SetScanParameters(0, -microplate.plate.ColumnSpacing, 0, nColumns);
+                    versa.SetScanParameters(0, info.ColumnDirection * microplate.plate.ColumnSpacing, 0, nColumns);
                 }
                 else
                 {
                     // Odd Row (B,D,F...)
                     error = versa.StepColumnMotor(endColumnPosition);
-                    versa.SetScanParameters(0, microplate.plate.ColumnSpacing, 0, nColumns);
+                    versa.SetScanParameters(0, -info.ColumnDirection * microplate.plate.ColumnSpacing, 0, nColumns);
                 }
 
                 // Check Column Motor Error
@@ -1041,13 +1068,13 @@ namespace FI.PlateReader.Gen4.JETI
                 }
 
                 // Get Current Temperature
-                //if (ms.Connected)
-                //{
-                //    ms.GetHeatsinkTemp();
-                //    time.Delay(10);
-                //    ms.GetObjectTemp();
-                //    time.Delay(10);
-                //}
+                if (ms.Connected)
+                {
+                    ms.GetHeatsinkTemp();
+                    time.Delay(10);
+                    ms.GetObjectTemp();
+                    time.Delay(10);
+                }
 
                 // Start stop-and-go measurement (Hardware Control)
                 error = versa.StartScanMeasurement();
@@ -1086,14 +1113,14 @@ namespace FI.PlateReader.Gen4.JETI
                     // Get and Set Results
                     versa.GetScanResults(j);
 
-                    // Get Current Temperature
-                    if (ms.Connected)
-                    {
-                        ms.GetHeatsinkTemp();
-                        time.Delay(10);
-                        ms.GetObjectTemp();
-                        time.Delay(10);
-                    }
+                    //// Get Current Temperature
+                    //if (ms.Connected)
+                    //{
+                    //    //ms.GetHeatsinkTemp();
+                    //    //time.Delay(10);
+                    //    ms.GetObjectTemp();
+                    //    //time.Delay(10);
+                    //}
 
                     data.SetResult(currentScan, index, microplate.plate.Wells, versa.Waveform, ms.ObjectTemp, ms.HeatsinkTemp);
 
@@ -1104,6 +1131,14 @@ namespace FI.PlateReader.Gen4.JETI
                 // Wait for scam measurement to finish
                 versa.EndScanMeasurement();
 
+                // Get Current Temperature
+                if (ms.Connected)
+                {
+                    ms.GetHeatsinkTemp();
+                    time.Delay(10);
+                    ms.GetObjectTemp();
+                    time.Delay(10);
+                }
             }
 
             // End Time
@@ -1192,6 +1227,10 @@ namespace FI.PlateReader.Gen4.JETI
                 // Retrieve the data from the scan
                 for (int j = 0; j < column; j++)
                 {
+                    // Check Cancel
+                    if (token.IsCancellationRequested)
+                        break;
+
                     // Even or Odd Row
                     int columnIndex;
 
@@ -1287,13 +1326,16 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Plate Scan Tasks
             instrument.ActiveScan = false;
-            versa.SetScanHandles();
+            if (info.Detector == "LineScan")
+            {
+                versa.SetScanHandles();
+            }
 
             // Start stopwatch
             time.StartScanStopwatch();
 
             // Move to start position
-            error = versa.MoveReferencePosition();
+            error = versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
             if (!error)
             {
@@ -1303,11 +1345,11 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Background measurement
             instrument.SetInstrumentStatus(8);
-            versa.SetIntegrationTime();
-
+            
             switch (info.Detector)
             {
                 case "LineScan":
+                    versa.SetIntegrationTime();
                     error = versa.DarkMeasurement();
                     break;
                 case "JETI":
@@ -1439,7 +1481,7 @@ namespace FI.PlateReader.Gen4.JETI
             if (error)
             {
                 // Move Back to Reference Position
-                versa.MoveReferencePosition();
+                versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
                 // Instrument State
                 StateDeviceActive();
@@ -1481,19 +1523,31 @@ namespace FI.PlateReader.Gen4.JETI
             double startColumnPosition = image.motor.ColumnPosition[0];
             double endColumnPosition = image.motor.ColumnPosition[column - 1];
 
+            // need to fix for pixel round off
+            // convert start position and step to integer steps.
+            double dColumnStart = startColumnPosition * ((versa.info.ColumnStepsPerRev * versa.info.ColumnMicrostep) / (versa.info.ColumnUnitsPerRev));
+            int iColumnStart = (int)dColumnStart;
+            double dColumnStep = image.motor.ColumnStepSize * ((versa.info.ColumnStepsPerRev * versa.info.ColumnMicrostep) / (versa.info.ColumnUnitsPerRev));
+            int iColumnStep = (int)dColumnStep;
+            dColumnStart = iColumnStart * ((versa.info.ColumnUnitsPerRev) / (versa.info.ColumnStepsPerRev * versa.info.ColumnMicrostep));
+            dColumnStep = iColumnStep * ((versa.info.ColumnUnitsPerRev) / (versa.info.ColumnStepsPerRev * versa.info.ColumnMicrostep));
+            double dColumnEnd = dColumnStart + (dColumnStep * (double)(column - 1));
 
             // Initialise Data
             data.InitializeData(1, wells);
 
             // Plate Scan Tasks
             instrument.ActiveScan = true;
-            versa.SetScanHandles();
+            if (info.Detector == "LineScan")
+            {
+                versa.SetScanHandles();
+            }
 
             // Start stopwatch
             time.StartScanStopwatch();
 
             // Move to start position
-            error = versa.MoveReferencePosition();
+            error = versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
             if (!error)
             {
@@ -1541,20 +1595,25 @@ namespace FI.PlateReader.Gen4.JETI
                     break;
                 }
 
+                versa.CheckColumnMotor();
+
                 // Step column to start or end of scan area & Set Scanning Parameters
                 if (i % 2 == 0)
                 {
                     // Even Row (A,C,E...)
-                    error = versa.StepColumnMotor(startColumnPosition);
-                    versa.SetScanParameters(0, info.ColumnDirection * image.motor.ColumnStepSize, 0, column);
+                    error = versa.StepColumnMotor(dColumnStart); // (startColumnPosition);
+                    versa.SetScanParameters(0, info.ColumnDirection * dColumnStep, 0, column); //image.motor.ColumnStepSize
                 }
                 else
                 {
                     // Odd Row (B,D,F...)
-                    error = versa.StepColumnMotor(endColumnPosition);
-                    versa.SetScanParameters(0, -info.ColumnDirection*image.motor.ColumnStepSize, 0, column);
+                    error = versa.StepColumnMotor(dColumnEnd);    // (endColumnPosition);
+                    versa.SetScanParameters(0, -info.ColumnDirection * dColumnStep, 0, column);
                 }
 
+                versa.CheckColumnMotor();
+                
+                
                 // Check Column Motor Error
                 if (!error)
                 {
@@ -1630,7 +1689,7 @@ namespace FI.PlateReader.Gen4.JETI
             if (error)
             {
                 // Move Back to Reference Position
-                versa.MoveReferencePosition();
+                versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
                 // Instrument State
                 StateDeviceActive();
@@ -1676,13 +1735,16 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Plate Scan Tasks
             instrument.ActiveScan = true;
-            versa.SetScanHandles();
+            if (info.Detector == "LineScan")
+            {
+                versa.SetScanHandles();
+            }
 
             // Start stopwatch
             time.StartScanStopwatch();
 
             // Move to start position
-            error = versa.MoveReferencePosition();
+            error = versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
             if (!error)
             {
@@ -1691,12 +1753,12 @@ namespace FI.PlateReader.Gen4.JETI
             }
 
             // Background measurement
-            instrument.SetInstrumentStatus(8);
-            versa.SetIntegrationTime();
+            instrument.SetInstrumentStatus(8);            
 
             switch (info.Detector)
             {
                 case "LineScan":
+                    versa.SetIntegrationTime();
                     error = versa.DarkMeasurement();
                     break;
                 case "JETI":
@@ -1851,7 +1913,7 @@ namespace FI.PlateReader.Gen4.JETI
             if (error)
             {
                 // Move Back to Reference Position
-                versa.MoveReferencePosition();
+                versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
                 // Instrument State
                 StateDeviceActive();
@@ -1958,7 +2020,7 @@ namespace FI.PlateReader.Gen4.JETI
             if (error)
             {
                 // Move Back to Reference Position
-                versa.MoveReferencePosition();
+                versa.MoveReferencePosition(microplate.motor.ColumnReference, microplate.motor.RowReference);
 
                 // Instrument State
                 StateDeviceActive();
@@ -2379,8 +2441,10 @@ namespace FI.PlateReader.Gen4.JETI
             {
                 // Variables
                 int value = cboPlotSelection.SelectedIndex;
+                int thermal = cboThermalSelection.SelectedIndex;
                 string wellName = dataExport.ConvertRow(row) + (columnIndex + 1).ToString();
-                int index;
+                int well_index;
+                int total_index;
                 int wells;
 
                 charting.FindHeatMapColors(value, data.block.Data[scan][value]);
@@ -2389,27 +2453,37 @@ namespace FI.PlateReader.Gen4.JETI
                 if(instrument.scanType == 3)
                 {
                     ChartResultMap_ImagePaste();
-                    index = (row * image.ColumnPixel) + columnIndex;
+                    well_index = (row * image.ColumnPixel) + columnIndex;
                     wells = image.Wells;
                 }
                 else
                 {
                     ChartResultMap_ActivePaste();
-                    index = (row * microplate.plate.Column) + columnIndex;
+                    well_index = (row * microplate.plate.Column) + columnIndex;
                     wells = microplate.plate.Wells;
                 }
 
+                if (PlotWaveforms)
+                {
+                    ChartThermalMap_ActivePaste();
+                }
 
                 // Waveform Chart
-                if (index >= 0)
+                if (well_index >= 0)
                 {
-                    index = (scan * wells) + index;
+                    total_index = (scan * wells) + well_index;
 
                     ChartResultMap_MarkerPaste(row, columnIndex);
-                    if (!instrument.ActiveScan)
-                    {
-                        WaveformChart_ActivePaste(index, wellName);
-                    }                    
+                    //if (!instrument.ActiveScan)
+                    //{
+                        WaveformChart_ActivePaste(total_index, wellName);
+                    //}              
+
+                    //if (PlotWaveforms)
+                    //{
+                        ChartThermalMap_MarkerPaste(row, columnIndex);
+                        ThermalChart_ActivePaste(well_index, wellName);
+                    //}
                 }
 
             }
@@ -2507,12 +2581,20 @@ namespace FI.PlateReader.Gen4.JETI
             ChartResultMap_Update();
             ChartResultMap_NullPaste();
 
+            ChartThermalMap_Update();
+            ChartThermalMap_NullPaste();
+
+
             // Legend Chart
             ChartLegend_Update();
 
             // Waveform Result Chart Reset
             WaveformChart_Update();
             WaveformChart_NullPaste();
+
+            // Thermal Chart Reset
+            ThermalChart_Update();
+            ThermalChart_NullPaste();
 
             // Reset Label Variables
             time.PlateTime = "0:00";
@@ -3347,6 +3429,294 @@ namespace FI.PlateReader.Gen4.JETI
         }
 
 
+
+
+
+
+        private void ChartThermalMap_NullPaste()
+        {
+            // Clear All Series
+            chartThermalMap.Series.Clear();
+            chartThermalMap.Legends.Clear();
+
+            // Create Series
+            Series S1 = chartThermalMap.Series.Add("S1");
+            S1.ChartType = SeriesChartType.Point;
+            int pt;
+
+            // Paste the Null Data
+            int row = charting.plotParameters.row;
+            int column = charting.plotParameters.column;
+
+            for (int i = 0; i < row; i++)
+                for (int j = 0; j < column; j++)
+                {
+                    pt = S1.Points.AddXY(j + 1, i + 1);
+                    S1.Points[pt].MarkerStyle = charting.plotParameters.wsMarkerStyle;
+                    S1.Points[pt].MarkerColor = charting.plotParameters.wsNullColor;
+                    S1.Points[pt].MarkerSize = 0;
+                }
+        }
+
+        private void ChartThermalMap_ActivePaste()
+        {
+
+            // Clear All Series
+            chartThermalMap.Series.Clear();
+            chartThermalMap.Legends.Clear();
+
+            // Create Series
+            Series S1 = chartThermalMap.Series.Add("S1");
+            S1.ChartType = SeriesChartType.Point;
+            Series S2 = chartThermalMap.Series.Add("S2");
+            S2.ChartType = SeriesChartType.Point;
+
+            // Variables
+            int pt;
+            int row = charting.plotParameters.row;
+            int column = charting.plotParameters.column;
+            int lenPlate = charting.plotParameters.wells;
+
+            // Get the colors
+            int[] colors = new int[lenPlate];
+            colors = charting.ColorValue;
+
+            // Paste Values
+            for (int i = 0; i < row; i++)
+                for (int j = 0; j < column; j++)
+                {
+                    //if (plateSetup.ActiveRow[i] && plateSetup.ActiveColumn[j])
+                    //{
+                    //    // Paste Active Color
+                    //    int index = (i * column) + j;
+                    //    pt = S1.Points.AddXY(j + 1, i + 1);
+                    //    S1.Points[pt].MarkerStyle = charting.plotParameters.dataMarkerStyle;
+                    //    S1.Points[pt].MarkerColor = Color.FromArgb(150, charting.ColorList[colors[index]]);
+                    //    S1.Points[pt].MarkerSize = charting.plotParameters.dataMarkerSize;
+                    //}
+                    //else
+                    //{
+                    //    // Paste Null Color
+                    //    pt = S1.Points.AddXY(j + 1, i + 1);
+                    //    S1.Points[pt].MarkerStyle = charting.plotParameters.dataMarkerStyle;
+                    //    S1.Points[pt].MarkerColor = Color.White;
+                    //    S1.Points[pt].MarkerSize = 0;
+                    //}
+                }
+
+
+
+            chartThermalMap.Update();
+
+
+        }
+
+
+        private void ChartThermalMap_MarkerPaste(int row, int column)
+        {
+            // Paint Well Marker
+            int markerSize = charting.plotParameters.markerMarkerSize;
+            int pt = chartThermalMap.Series["S2"].Points.AddXY(column + 1, row + 1);
+            chartThermalMap.Series["S2"].Points[pt].MarkerStyle = MarkerStyle.Cross;
+            chartThermalMap.Series["S2"].Points[pt].MarkerColor = Color.Black;
+            chartThermalMap.Series["S2"].Points[pt].MarkerSize = markerSize;
+
+        }
+
+        private void chartThermalMap_MouseMove(object sender, MouseEventArgs e)
+        {
+            ChartArea chartArea = chartThermalMap.ChartAreas[0];
+
+            // Variables
+            int row;
+            int col;
+
+            row = microplate.plate.Row;
+            col = microplate.plate.Column;
+
+            chartArea.CursorX.LineWidth = 0;
+            chartArea.CursorY.LineWidth = 0;
+
+            chartArea.CursorX.SetCursorPixelPosition(new Point(e.X, e.Y), true);
+            chartArea.CursorY.SetCursorPixelPosition(new Point(e.X, e.Y), true);
+
+            double pX = chartArea.CursorX.Position; //X Axis Coordinate of your mouse cursor
+            double pY = chartArea.CursorY.Position; //Y Axis Coordinate of your mouse cursor
+
+            // Verify he cursor is inside the chart
+            if (pX < 1) { chartArea.CursorX.Position = 1; pX = 1; }
+            if (pY < 1) { chartArea.CursorY.Position = 1; pY = 1; }
+            if (pX > col) { chartArea.CursorX.Position = col; pX = col; }
+            if (pY > row) { chartArea.CursorY.Position = row; pY = row; }
+
+            // Update Textbox
+            lbColumn.Text = pX.ToString();
+            lbRow.Text = dataExport.ConvertRow((int)pY - 1);
+
+            lbColumn.Update();
+            lbRow.Update();
+
+        }
+
+        private void chartThermalMap_Click(object sender, EventArgs e)
+        {
+            if (data.DataAvailable)
+            {
+                // Variables
+                ChartArea chartArea = chartThermalMap.ChartAreas[0];
+
+                int rowMin;
+                int rowMax;
+                int columnMin;
+                int columnMax;
+
+                // Differente min/max for well image
+                rowMin = plateSetup.RowMin + 1;
+                rowMax = plateSetup.RowMax + 1;
+
+                columnMin = plateSetup.ColumnMin + 1;
+                columnMax = plateSetup.ColumnMax + 1;
+
+                // Get Cursor Position
+                double pX = chartArea.CursorX.Position; //X Axis Coordinate of your mouse cursor
+                double pY = chartArea.CursorY.Position; //Y Axis Coordinate of your mouse cursor
+
+                // Verify the cursor is inside the chart
+                if (pX < columnMin) { pX = columnMin; }
+                if (pX > columnMax) { pX = columnMax; }
+                if (pY < rowMin) { pY = rowMin; }
+                if (pY > rowMax) { pY = rowMax; }
+
+
+                // Update Plot Value Textboxes (if PlotData > 0)
+                int sColumn = (int)pX - 1;
+                int sRow = (int)pY - 1;
+
+                UpdateDataChart(instrument.CurrentScan, sRow, sColumn);
+
+            }
+        }
+
+        private void ChartThermalMap_Update()
+        {
+            // Clear All Series
+            chartThermalMap.Series.Clear();
+            chartThermalMap.Legends.Clear();
+            chartThermalMap.ChartAreas.Clear();
+
+            // Size
+            if (instrument.scanType == 3)
+            {
+                chartThermalMap.Size = new Size(450, 450);
+            }
+            else
+            {
+                chartThermalMap.Size = new Size(648, 415);
+            }
+
+            // Row/Col
+            int row = charting.plotParameters.row;
+            int col = charting.plotParameters.column;
+
+            // Initialize axis
+            ChartArea chartArea = chartThermalMap.ChartAreas.Add("chartArea");
+            CustomLabel customLabel;
+
+            // Enable Secondary Axis
+            chartArea.AxisX2.Enabled = AxisEnabled.True;
+            chartArea.AxisY2.Enabled = AxisEnabled.True;
+
+            // Axis Line color and width
+            chartArea.AxisX.LineColor = Color.Black;
+            chartArea.AxisY.LineColor = Color.Black;
+            chartArea.AxisX2.LineColor = Color.Black;
+            chartArea.AxisY2.LineColor = Color.Black;
+
+            chartArea.AxisX.LineWidth = 1;
+            chartArea.AxisY.LineWidth = 1;
+            chartArea.AxisX2.LineWidth = 1;
+            chartArea.AxisY2.LineWidth = 1;
+
+            // Form and Chart Area Color
+            chartThermalMap.BackColor = Color.White;
+
+            // Enable/Disable Tick Marks
+            chartArea.AxisX.MajorTickMark.Enabled = false;
+            chartArea.AxisY.MajorTickMark.Enabled = false;
+            chartArea.AxisX2.MajorTickMark.Enabled = false;
+            chartArea.AxisY2.MajorTickMark.Enabled = false;
+            chartArea.AxisX2.MinorTickMark.Enabled = false;
+            chartArea.AxisY2.MinorTickMark.Enabled = false;
+
+            // Grid Lines False
+            chartArea.AxisX.MajorGrid.Enabled = true;
+            chartArea.AxisX.MinorGrid.Enabled = false;
+            chartArea.AxisY.MajorGrid.Enabled = true;
+            chartArea.AxisY.MinorGrid.Enabled = false;
+            chartArea.AxisX2.MajorGrid.Enabled = false;
+            chartArea.AxisX2.MinorGrid.Enabled = false;
+            chartArea.AxisY2.MajorGrid.Enabled = false;
+            chartArea.AxisY2.MinorGrid.Enabled = false;
+
+            // Grid Lines size
+            chartArea.AxisX.MajorGrid.LineWidth = 1;
+            chartArea.AxisY.MajorGrid.LineWidth = 1;
+
+            // Turn off Labels on secondary axis
+            chartArea.AxisX2.LabelStyle.Enabled = false;
+            chartArea.AxisY2.LabelStyle.Enabled = false;
+
+            // Axis
+            chartArea.AxisX.Minimum = 0.5;
+            chartArea.AxisY.Minimum = 0.5;
+            chartArea.AxisY.IntervalOffset = 1;
+            chartArea.AxisX.IntervalOffset = 1;
+            chartArea.AxisX.Interval = 1;
+            chartArea.AxisY.Interval = 1;
+
+            chartArea.AxisY.IsReversed = true;
+
+            chartArea.AxisX.Maximum = col + 0.5;
+            chartArea.AxisY.Maximum = row + 0.5;
+
+            chartArea.AxisX.LabelAutoFitMinFontSize = charting.plotParameters.xFontSize;
+            chartArea.AxisY.LabelAutoFitMinFontSize = charting.plotParameters.yFontSize;
+
+            // Row Labels
+            double temp = charting.plotParameters.rowIntervalStart;
+            int increment1 = charting.plotParameters.rowIncrement1;
+            int increment2 = charting.plotParameters.rowIncrement2;
+
+            foreach (string rowLabel in charting.plotParameters.rowLabels)
+            {
+                customLabel = new CustomLabel(temp, temp + increment1, rowLabel, 0, LabelMarkStyle.None);
+                chartArea.AxisY.CustomLabels.Add(customLabel);
+                temp += increment2;
+            }
+
+            // Column Labels
+            temp = charting.plotParameters.columnIntervalStart;
+            increment1 = charting.plotParameters.columnIncrement1;
+            increment2 = charting.plotParameters.columnIncrement2;
+
+            foreach (string columnLabel in charting.plotParameters.columnLabels)
+            {
+                customLabel = new CustomLabel(temp, temp + increment1, columnLabel, 0, LabelMarkStyle.None);
+                chartArea.AxisX.CustomLabels.Add(customLabel);
+                temp += increment2;
+            }
+
+        }
+
+
+
+
+
+
+
+
+
+
         // Fluorescence Spectrum Waveform Chart 
         private void WaveformChart_Update()
         {
@@ -3648,58 +4018,387 @@ namespace FI.PlateReader.Gen4.JETI
             S4.Legend = "Legend2";
             S5.Legend = "Legend2";
 
-            if (info.Detector == "TIA")
+            if ((PlotWaveforms) | (!instrument.ActiveScan))
             {
-                // Waveform Plot
-                for (int i = start; i < (start + pixelLength); i++)
+                if (info.Detector == "TIA")
                 {
-                    S1.Points.AddXY(wavelength[i], result[i]);  // + 100);
+                    // Waveform Plot
+                    for (int i = start; i < (start + pixelLength); i++)
+                    {
+                        S1.Points.AddXY(wavelength[i], result[i]);  // + 100);
+                    }
+
+                    S2.ChartType = SeriesChartType.Line;
+                    S2.MarkerSize = 4;
+                    S2.MarkerStyle = MarkerStyle.Circle;
+
+                    S3.ChartType = SeriesChartType.Line;
+                    S3.MarkerSize = 4;
+                    S3.MarkerStyle = MarkerStyle.Circle;
+
+                    // Waveform Plot
+                    for (int i = start; i < (start + pixelLength); i++)
+                    {
+                        S2.Points.AddXY(wavelength[i], result1[i]);  // + 100);
+                    }
+
+                    // Waveform Plot
+                    for (int i = start; i < (start + pixelLength); i++)
+                    {
+                        S3.Points.AddXY(wavelength[i], result2[i]);  // + 100);
+                    }
                 }
-
-                S2.ChartType = SeriesChartType.Line;
-                S2.MarkerSize = 4;
-                S2.MarkerStyle = MarkerStyle.Circle;
-
-                S3.ChartType = SeriesChartType.Line;
-                S3.MarkerSize = 4;
-                S3.MarkerStyle = MarkerStyle.Circle;
-
-                // Waveform Plot
-                for (int i = start; i < (start + pixelLength); i++)
+                else
                 {
-                    S2.Points.AddXY(wavelength[i], result1[i]);  // + 100);
-                }
+                    // Waveform Plot
+                    for (int i = start; i < (start + pixelLength); i++)
+                    {
+                        S1.Points.AddXY(wavelength[i], result[i]);  // + 100);
+                    }
 
-                // Waveform Plot
-                for (int i = start; i < (start + pixelLength); i++)
-                {
-                    S3.Points.AddXY(wavelength[i], result2[i]);  // + 100);
+                    // Intensity A: Area Chart
+                    for (int i = x1; i < x2; i++)
+                    {
+                        S2.Points.AddXY(wavelength[i], result[i]);  // + 100);
+                    }
+
+                    // Intensity B: Area Chart
+                    for (int i = x3; i < x4; i++)
+                    {
+                        S3.Points.AddXY(wavelength[i], result[i]);  // + 100);
+                    }
                 }
             }
-            else
-            {
-                // Waveform Plot
-                for (int i = start; i < (start + pixelLength); i++)
-                {
-                    S1.Points.AddXY(wavelength[i], result[i]);  // + 100);
-                }
 
-                // Intensity A: Area Chart
-                for (int i = x1; i < x2; i++)
-                {
-                    S2.Points.AddXY(wavelength[i], result[i]);  // + 100);
-                }
-
-                // Intensity B: Area Chart
-                for (int i = x3; i < x4; i++)
-                {
-                    S3.Points.AddXY(wavelength[i], result[i]);  // + 100);
-                }
-            }
 
             chartWaveform.Update();
 
         }
+
+
+
+
+
+
+        // Thermal Chart 
+        private void ThermalChart_Update()
+        {
+            // Clear All Series
+            chartThermal.Series.Clear();
+            chartThermal.Legends.Clear();
+            chartThermal.ChartAreas.Clear();
+
+            // Initialize axis
+            ChartArea chartArea = chartThermal.ChartAreas.Add("chartArea");
+
+            // Axis Line color and width
+            chartArea.AxisX.LineColor = Color.Black;
+            chartArea.AxisY.LineColor = Color.Black;
+            chartArea.AxisX2.LineColor = Color.Black;
+            chartArea.AxisY2.LineColor = Color.Black;
+
+            chartArea.AxisX.LineWidth = 1;
+            chartArea.AxisY.LineWidth = 1;
+            chartArea.AxisX2.LineWidth = 1;
+            chartArea.AxisY2.LineWidth = 1;
+
+            // Form and Chart Area Color
+            chartThermal.BackColor = Color.White;
+
+            // Enable/Disable Tick Marks
+            chartArea.AxisX.MajorTickMark.Enabled = true;
+            chartArea.AxisY.MajorTickMark.Enabled = false;
+            chartArea.AxisX2.MajorTickMark.Enabled = false;
+            chartArea.AxisY2.MajorTickMark.Enabled = false;
+            chartArea.AxisX2.MinorTickMark.Enabled = false;
+            chartArea.AxisY2.MinorTickMark.Enabled = false;
+
+            chartArea.AxisX.MajorTickMark.Interval = 2;
+
+
+            // Grid Lines X
+            chartArea.AxisX.MajorGrid.Enabled = false;
+            chartArea.AxisX.MinorGrid.Enabled = false;
+            chartArea.AxisX2.MajorGrid.Enabled = false;
+            chartArea.AxisX2.MinorGrid.Enabled = false;
+
+            chartArea.AxisX.MajorGrid.Interval = 10;
+
+            chartArea.AxisX.MajorGrid.LineDashStyle = ChartDashStyle.Dash;
+
+            // Grid Lines Y
+            chartArea.AxisY.MajorGrid.Enabled = false;
+            chartArea.AxisY.MinorGrid.Enabled = false;
+            chartArea.AxisY2.MajorGrid.Enabled = false;
+            chartArea.AxisY2.MinorGrid.Enabled = false;
+
+            chartArea.AxisY.MajorGrid.LineDashStyle = ChartDashStyle.Dash;
+
+            chartThermal.ChartAreas[0].AxisY.Minimum = 0;
+            chartThermal.ChartAreas[0].AxisY.Maximum = 10;
+
+            // FontSizes
+            chartArea.IsSameFontSizeForAllAxes = true;
+            chartArea.AxisX.LabelAutoFitMinFontSize = 12;
+            chartArea.AxisX.TitleFont = new Font("Arial", 12, FontStyle.Bold);
+
+            chartArea.AxisY.LabelAutoFitMinFontSize = 12;
+            chartArea.AxisY.TitleFont = new Font("Arial", 12, FontStyle.Bold);
+
+            // Set up the X Axis
+            chartArea.AxisX.Title = "Temperature [C]";
+            chartArea.AxisX.Minimum = instrument.StartingTemperature;
+            chartArea.AxisX.Maximum = instrument.EndingTemperature;
+            chartArea.AxisX.Interval = 2;
+
+            // Set up the Y Axis
+            chartArea.AxisY.Title = "Fluorescence";
+            chartArea.AxisY.LabelStyle.Format = "#,##";
+
+            chartThermal.Update();
+        }
+
+        private void ThermalChart_NullPaste()
+        {
+
+            // Clear All Series
+            chartThermal.Series.Clear();
+            chartThermal.Legends.Clear();
+
+            // Create Line Series
+            string seriesName1 = "A1";
+
+            Series S1 = chartThermal.Series.Add(seriesName1);
+            S1.ChartType = SeriesChartType.Line;
+            S1.Color = Color.Black;
+            S1.BorderWidth = 1;
+
+            S1.MarkerColor = Color.Black;
+            S1.MarkerSize = 4;
+            S1.MarkerStyle = MarkerStyle.Circle;
+
+            // Create Area Series
+            string seriesName2 = "Intensity A [ ] = N/A";
+            string seriesName3 = "Intensity B [ ] = N/A";
+            string seriesName4 = "Ratio [A / B ] = N/A";
+            string seriesName5 = "Moment [ ] = N/A";
+
+            // Intensity 1
+            Series S2 = chartThermal.Series.Add(seriesName2);
+            S2.ChartType = SeriesChartType.Area;
+            S2.Color = Color.FromArgb(150, Color.Blue);
+
+            // Intensity 2
+            Series S3 = chartThermal.Series.Add(seriesName3);
+            S3.ChartType = SeriesChartType.Area;
+            S3.Color = Color.FromArgb(150, Color.Red);
+
+            // Ratio
+            Series S4 = chartThermal.Series.Add(seriesName4);
+            S4.ChartType = SeriesChartType.Point;
+            S4.MarkerSize = 0;
+            S4.MarkerColor = Color.White;
+
+            // Moment
+            Series S5 = chartThermal.Series.Add(seriesName5);
+            S5.ChartType = SeriesChartType.Point;
+            S5.MarkerSize = 0;
+            S5.MarkerColor = Color.White;
+
+            // Legend 1 (Well Name & Ratio)
+            chartThermal.Legends.Add(new Legend("Legend1"));
+
+            chartThermal.Legends[0].Docking = Docking.Top;
+            chartThermal.Legends[0].Alignment = StringAlignment.Far;
+
+            chartThermal.Legends[0].Font = new Font("Arial", 12, FontStyle.Bold);
+            chartThermal.Legends[0].BorderDashStyle = ChartDashStyle.Solid;
+            chartThermal.Legends[0].BorderColor = Color.Black;
+
+            S1.Legend = "Legend1";
+
+            // Legend 2 (Values)
+            chartThermal.Legends.Add(new Legend("Legend2"));
+
+            chartThermal.Legends[1].Docking = Docking.Bottom;
+            chartThermal.Legends[1].Alignment = StringAlignment.Center;
+
+            chartThermal.Legends[1].Font = new Font("Arial", 12, FontStyle.Regular);
+            chartThermal.Legends[1].BorderDashStyle = ChartDashStyle.Solid;
+            chartThermal.Legends[1].BorderColor = Color.Black;
+
+            S2.Legend = "Legend2";
+            S3.Legend = "Legend2";
+            S4.Legend = "Legend2";
+            S5.Legend = "Legend2";
+
+            // Waveform Plot
+            chartThermal.ChartAreas[0].AxisY.Minimum = 0;
+            chartThermal.ChartAreas[0].AxisY.Maximum = 10;
+
+            S1.Points.AddXY(0, 0);
+
+            // Area chart
+            S2.Points.AddXY(0, 0);
+            S3.Points.AddXY(0, 0);
+
+            chartThermal.Update();
+        }
+
+        private void ThermalChart_ActivePaste(int index, string wellName)
+        {
+            int thermal = cboThermalSelection.SelectedIndex;
+
+            // Point Chart
+            int start = info.StartPixel;
+            int pixelLength = info.PixelLength;
+
+            // Area Chart
+            int x1 = data.analysisParameters.PixelA_Low;
+            int x2 = data.analysisParameters.PixelA_High;
+
+            int x3 = data.analysisParameters.PixelB_Low;
+            int x4 = data.analysisParameters.PixelB_High;
+
+            // Wavelengths
+            double[] wavelength = info.Wavelength;
+
+            // Get the waveform and find max value
+            int nscan = data.block.IntensityA.Length;
+            int nwell = data.block.IntensityA[0].Length;
+            double[] result = new double[nscan];
+            double[] temp = new double[nscan];
+            for (int i = 0; i < nscan; i++)
+            {
+                switch (thermal)
+                {
+                    case 0:
+                        result[i] = data.block.IntensityA[i][index];
+                        break;
+                    case 1:
+                        result[i] = data.block.IntensityB[i][index];
+                        break;
+                    case 2:
+                        result[i] = data.block.Ratio[i][index];
+                        break;
+                    case 3:
+                        result[i] = data.block.Moment[i][index];
+                        break;
+                }
+                temp[i] = data.block.Temperature[i][index];
+            }
+
+            // Find Max
+            double max = 0;
+            for (int i = 0; i < nscan; i++)
+            {
+                if (result[i] > max)
+                {
+                    max = result[i];
+                }
+            }
+
+
+            if (instrument.Autoscale)
+            {
+                max = charting.FindMax(max);
+
+                chartThermal.ChartAreas[0].AxisY.Minimum = -0.1 * max;
+                chartThermal.ChartAreas[0].AxisY.Maximum = max;
+            }
+
+
+            // Clear All Series and Legends
+            chartThermal.Series.Clear();
+            chartThermal.Legends.Clear();
+
+            // Create Line Series
+            string seriesName1 = wellName;
+
+            Series S1 = chartThermal.Series.Add(seriesName1);
+            S1.ChartType = SeriesChartType.Line;
+            S1.Color = Color.Black;
+            S1.BorderWidth = 1;
+
+            S1.MarkerColor = Color.Black;
+            S1.MarkerSize = 4;
+            S1.MarkerStyle = MarkerStyle.Circle;
+
+            // Create Area Series
+            string seriesName2 = "Intensity A [" + data.analysisParameters.WavelengthA.ToString() + "] = " + data.PlateResult[index].IntensityA.ToString("#,##");
+            string seriesName3 = "Intensity B [" + data.analysisParameters.WavelengthB.ToString() + "] = " + data.PlateResult[index].IntensityB.ToString("#,##");
+            string seriesName4 = "Ratio [" + data.analysisParameters.WavelengthA.ToString() + "/" + data.analysisParameters.WavelengthB.ToString() + "] = " + data.PlateResult[index].Ratio.ToString("F2");
+            string seriesName5 = "Moment [" + data.analysisParameters.MomentA.ToString() + "-" + data.analysisParameters.MomentB.ToString() + "] = " + data.PlateResult[index].Moment.ToString("F2");
+
+            // Intensity 1
+            Series S2 = chartThermal.Series.Add(seriesName2);
+            S2.ChartType = SeriesChartType.Area;
+            S2.Color = Color.FromArgb(150, Color.Blue);
+
+            // Intensity 2
+            Series S3 = chartThermal.Series.Add(seriesName3);
+            S3.ChartType = SeriesChartType.Area;
+            S3.Color = Color.FromArgb(150, Color.Red);
+
+            // Ratio
+            Series S4 = chartThermal.Series.Add(seriesName4);
+            S4.ChartType = SeriesChartType.Point;
+            S4.MarkerSize = 0;
+            S4.MarkerColor = Color.White;
+
+            // Moment
+            Series S5 = chartThermal.Series.Add(seriesName5);
+            S5.ChartType = SeriesChartType.Point;
+            S5.MarkerSize = 0;
+            S5.MarkerColor = Color.White;
+
+            // Legend 1 (Well Name)
+            chartThermal.Legends.Add(new Legend("Legend1"));
+
+            chartThermal.Legends[0].Docking = Docking.Top;
+            chartThermal.Legends[0].Alignment = StringAlignment.Far;
+
+            chartThermal.Legends[0].Font = new Font("Arial", 12, FontStyle.Bold);
+            chartThermal.Legends[0].BorderDashStyle = ChartDashStyle.Solid;
+            chartThermal.Legends[0].BorderColor = Color.Black;
+
+            S1.Legend = "Legend1";
+
+            // Legend 2 (Values)
+            chartThermal.Legends.Add(new Legend("Legend2"));
+
+            chartThermal.Legends[1].Docking = Docking.Bottom;
+            chartThermal.Legends[1].Alignment = StringAlignment.Center;
+
+            chartThermal.Legends[1].Font = new Font("Arial", 12, FontStyle.Regular);
+            chartThermal.Legends[1].BorderDashStyle = ChartDashStyle.Solid;
+            chartThermal.Legends[1].BorderColor = Color.Black;
+            chartThermal.Legends[1].LegendStyle = LegendStyle.Table;
+
+            S2.Legend = "Legend2";
+            S3.Legend = "Legend2";
+            S4.Legend = "Legend2";
+            S5.Legend = "Legend2";
+
+            if ((PlotWaveforms) | (!instrument.ActiveScan))
+            {
+                // Waveform Plot
+                for (int i = 0; i < nscan; i++)
+                {
+                    S1.Points.AddXY(temp[i], result[i]);  // + 100);
+                }
+            }
+
+
+            chartThermal.Update();
+
+        }
+
+
+
+
+
+
 
         private void btnAutoscale_Click(object sender, EventArgs e)
         {
@@ -3729,6 +4428,47 @@ namespace FI.PlateReader.Gen4.JETI
             rtrn = ms.SetRampRate(10);
             rtrn = ms.SetTargetTemp(fTarget);
             rtrn = ms.SetOutputStatus(true);
+        }
+
+        private void btnLoadConfig_Click(object sender, EventArgs e)
+        {
+            // Open new file dialog
+            string strFilePath;
+            string strFileName;
+
+            OpenFileDialog of = new OpenFileDialog();
+            of.Title = "Open SUPR Configration File";
+            of.Filter = "Configuration Data|*.scfgx";
+            strFilePath = Directory.GetCurrentDirectory();
+            strFilePath = Path.GetFullPath(Path.Combine(strFilePath, @"../../../"));
+            //strFilePath = strFilePath + "\\" + "configurationFiles" + "\\";
+            strFilePath = strFilePath + "configurationFiles" + "\\";
+            of.InitialDirectory = strFilePath;
+
+
+            if (of.ShowDialog() == DialogResult.OK)
+            {
+                strFileName = Path.GetFileName(of.FileName);
+                strFilePath = Path.GetDirectoryName(of.FileName);
+                strFilePath = strFilePath + "\\";
+                settings.ReadConfigFile(strFilePath + strFileName);
+            }
+
+            // Pass the information to external classes
+            versa.info = settings.info;
+            data.info = settings.info;
+            microplate.info = settings.info;
+            image.info = settings.info;
+            instrument.info = settings.info;
+            info = settings.info;
+
+            // Write data to memory.
+            bool state = settings.WriteData();
+        }
+
+        private void chkPlotWaveform_CheckedChanged(object sender, EventArgs e)
+        {
+            PlotWaveforms = chkPlotWaveform.Checked;
         }
     }
 }
