@@ -62,8 +62,8 @@ namespace FI.PlateReader.Gen4.JETI
             public double Heatsink;
 
             public double[] Waveform;
-            public double[] Waveform1;
-            public double[] Waveform2;
+            //public double[] Waveform1;
+            //public double[] Waveform2;
             public double Max; 
 
         }
@@ -123,8 +123,8 @@ namespace FI.PlateReader.Gen4.JETI
 
    
                     Waveform = new double[info.NPixel],
-                    Waveform1 = new double[chnLength],
-                    Waveform2 = new double[chnLength],
+                    //Waveform1 = new double[chnLength],
+                    //Waveform2 = new double[chnLength],
                     Max = 0
 
                 });
@@ -227,8 +227,8 @@ namespace FI.PlateReader.Gen4.JETI
 
             // Set the Data
             PlateResult[indexScan].Waveform = waveform;
-            PlateResult[indexScan].Waveform1 = waveform1;
-            PlateResult[indexScan].Waveform2 = waveform2;
+            //PlateResult[indexScan].Waveform1 = waveform1;
+            //PlateResult[indexScan].Waveform2 = waveform2;
 
             PlateResult[indexScan].IntensityA = result[0];
             PlateResult[indexScan].IntensityB = result[1];

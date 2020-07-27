@@ -135,6 +135,9 @@ namespace FI.PlateReader.Gen4.JETI
             cboLed.Items.Add(info.LEDWavelength);
             cboLed.SelectedIndex = 0;
 
+            // Status LED
+            cboLEDState.SelectedIndex = 0;
+
             // Spectrometer 
             cboDetector.Items.Add(info.Detector);
             cboDetector.SelectedIndex = 0;
@@ -3930,11 +3933,11 @@ namespace FI.PlateReader.Gen4.JETI
             double[] result = data.PlateResult[index].Waveform;
             double[] result1 = data.PlateResult[index].Waveform;
             double[] result2 = data.PlateResult[index].Waveform;
-            if (info.Detector == "TIA")
-            {
-                result1 = data.PlateResult[index].Waveform1;
-                result2 = data.PlateResult[index].Waveform2;                
-            }
+            //if (info.Detector == "TIA")
+            //{
+            //    result1 = data.PlateResult[index].Waveform1;
+            //    result2 = data.PlateResult[index].Waveform2;                
+            //}
             
 
             if (instrument.Autoscale)
@@ -4469,6 +4472,44 @@ namespace FI.PlateReader.Gen4.JETI
         private void chkPlotWaveform_CheckedChanged(object sender, EventArgs e)
         {
             PlotWaveforms = chkPlotWaveform.Checked;
+        }
+
+        private void cboLEDState_Click(object sender, EventArgs e)
+        {
+            //int state = cboLEDState.SelectedIndex;
+
+            //switch (state)
+            //{
+            //    case 0:
+            //        Versa.Versa_IO_setOutputStates(1);
+            //        break;
+            //    case 1:
+            //        Versa.Versa_IO_setOutputStates(2);
+            //        break;
+            //    case 2:
+            //        Versa.Versa_IO_setOutputStates(4);
+            //        break;
+            //}
+
+        }
+
+        private void cboLEDState_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int state = cboLEDState.SelectedIndex;
+
+            switch (state)
+            {
+                case 0:
+                    Versa.Versa_IO_setOutputStates(1);
+                    break;
+                case 1:
+                    Versa.Versa_IO_setOutputStates(2);
+                    break;
+                case 2:
+                    Versa.Versa_IO_setOutputStates(4);
+                    break;
+            }
+
         }
     }
 }

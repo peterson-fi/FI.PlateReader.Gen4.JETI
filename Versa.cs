@@ -76,6 +76,11 @@ namespace FI.PlateReader.Gen4.JETI
         [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void Versa_resetAllPorts();
 
+
+        [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int Versa_IO_setOutputStates(int mask);
+
+
         [DllImport("VersaLib.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern Versa_Handle_t Versa_getSBusHandle(int sbusNumber);
 

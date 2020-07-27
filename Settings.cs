@@ -167,31 +167,7 @@ namespace FI.PlateReader.Gen4.JETI
 
         }
 
-        public bool WriteData()
-        {
-            // Connect to Versa
-            //bool state = Connect();
-            bool state = false;
-            // Try to download the data
-            //if (state)
-            //{
-                // Download data from EEPROM 
-                state = UploadData();
-                //Disconnect();
-            //}
 
-            // Check if download was sucessfull
-            if (state)
-            {
-                return true;
-            }
-            else
-            {
-                //DefaultValues();
-                return false;
-            }
-
-        }
 
         public bool Connect()
         {
@@ -464,138 +440,6 @@ namespace FI.PlateReader.Gen4.JETI
 
         }
 
-        public bool UploadData()
-        {
-            // From string to byte array
-            byte[] uData = new byte[1792];       //128
-
-            // if name is longer than 10 characters, truncate to fixed 10 characters
-            if (info.InstrumentName.Length > 10) { info.InstrumentName = info.InstrumentName.Substring(0, 10); }
-            byte[] name = Encoding.ASCII.GetBytes(info.InstrumentName);
-            name.CopyTo(uData, 0);
-
-            byte[] sn = BitConverter.GetBytes(info.InstrumentSerialNumber);
-            sn.CopyTo(uData, 10);
-
-            byte[] ledSN = BitConverter.GetBytes(info.LEDSerialNumber);
-            ledSN.CopyTo(uData, 14);
-
-            byte[] specSN = BitConverter.GetBytes(info.SpectrometerSerialNumber);
-            specSN.CopyTo(uData, 18);
-
-            byte[] roffset = BitConverter.GetBytes((float)info.RowOffset);
-            roffset.CopyTo(uData, 22);
-
-            byte[] coffset = BitConverter.GetBytes((float)info.ColumnOffset);
-            coffset.CopyTo(uData, 26);
-
-            byte[] reject = BitConverter.GetBytes((float)info.RowEject);
-            reject.CopyTo(uData, 30);
-
-            byte[] ceject = BitConverter.GetBytes((float)info.ColumnEject);
-            ceject.CopyTo(uData, 34);
-
-            byte[] rdir = BitConverter.GetBytes(info.RowDirection);
-            rdir.CopyTo(uData, 38);
-
-            byte[] cdir = BitConverter.GetBytes(info.ColumnDirection);
-            cdir.CopyTo(uData, 42);
-
-            byte[] ledPulse = BitConverter.GetBytes(info.LEDPulse);
-            ledPulse.CopyTo(uData, 46);
-
-            byte[] ledWL = BitConverter.GetBytes(info.LEDWavelength);
-            ledWL.CopyTo(uData, 50);
-
-            byte[] ledMax = BitConverter.GetBytes(info.MaxCurrent);
-            ledMax.CopyTo(uData, 54);
-
-            byte[] instGain = BitConverter.GetBytes((float)info.SpectrometerGain);
-            instGain.CopyTo(uData, 58);
-
-            byte[] pixels = BitConverter.GetBytes(info.NPixel);
-            pixels.CopyTo(uData, 62);
-
-            byte[] p0 = BitConverter.GetBytes((float)info.P0);
-            p0.CopyTo(uData, 66);
-
-            byte[] p1 = BitConverter.GetBytes((float)info.P1);
-            p1.CopyTo(uData, 70);
-
-            byte[] p2 = BitConverter.GetBytes((float)info.P2);
-            p2.CopyTo(uData, 74);
-
-            byte[] p3 = BitConverter.GetBytes((float)info.P3);
-            p3.CopyTo(uData, 78);
-
-            byte[] p4 = BitConverter.GetBytes((float)info.P4);
-            p4.CopyTo(uData, 82);
-
-            byte[] cStart = BitConverter.GetBytes(info.StartPixel);
-            cStart.CopyTo(uData, 86);
-
-            byte[] cLength = BitConverter.GetBytes(info.PixelLength);
-            cLength.CopyTo(uData, 90);
-
-            for (int n = 0; n < info.PixelLength; n++)
-            {
-                byte[] cValue = BitConverter.GetBytes((float)info.WavelengthCorrection[n]);
-                cValue.CopyTo(uData, 94 + (4 * n));
-            }
-
-            // Write row motor reverse
-            byte[] rowReverse = BitConverter.GetBytes(info.RowMotorReverse);
-            rowReverse.CopyTo(uData, 1742);
-
-            // Write row motor current
-            byte[] rowCurrent = BitConverter.GetBytes(info.RowCurrent);
-            rowCurrent.CopyTo(uData, 1746);
-
-            // Write row motor microstep
-            byte[] rowMicrostep = BitConverter.GetBytes(info.RowMicrostep);
-            rowMicrostep.CopyTo(uData, 1750);
-
-            // Read row motor units
-            byte[] rowUnits = BitConverter.GetBytes((float)info.RowUnitsPerRev);
-            rowUnits.CopyTo(uData, 1754);
-
-            // Write row motor reverse
-            byte[] columnReverse = BitConverter.GetBytes(info.RowMotorReverse);
-            columnReverse.CopyTo(uData, 1758);
-
-            // Write row motor current
-            byte[] columnCurrent = BitConverter.GetBytes(info.RowCurrent);
-            columnCurrent.CopyTo(uData, 1762);
-
-            // Write row motor microstep
-            byte[] columnMicrostep = BitConverter.GetBytes(info.RowMicrostep);
-            columnMicrostep.CopyTo(uData, 1766);
-
-            // Read row motor units
-            byte[] columnUnits = BitConverter.GetBytes((float)info.RowUnitsPerRev);
-            columnUnits.CopyTo(uData, 1770);
-
-            bool state = false;
-            unsafe
-            {
-                fixed (byte* dPointer = &uData[0])
-                {
-                    state = CheckError(Versa_uploadUserData(dPointer));
-                };
-            }
-
-            // Check Values
-            if (state)
-            {
-                return CheckValues();
-            }
-            else
-            {
-                return false;
-            }
-
-        }
-
         public void DefaultValues()
         {
 
@@ -659,9 +503,11 @@ namespace FI.PlateReader.Gen4.JETI
                 info.Wavelength[i] = value;
             }
 
-            info.WavelengthStart = info.Wavelength[info.StartPixel];
-            info.WavelengthEnd = info.Wavelength[info.StartPixel + info.PixelLength];
+            info.WavelengthStart = Math.Floor(info.Wavelength[info.StartPixel]);
+            info.WavelengthEnd = Math.Floor(info.Wavelength[info.StartPixel + info.PixelLength]);
         }
+		
+		
 
         public void ReadConfigFile(string configfile)
         {
@@ -783,12 +629,12 @@ namespace FI.PlateReader.Gen4.JETI
                 info.StartPixel = Convert.ToInt32(Values[53]);
                 info.PixelLength = Convert.ToInt32(Values[54]);
 
-                info.WavelengthStart = info.Wavelength[info.StartPixel];
-                info.WavelengthEnd = info.Wavelength[info.StartPixel + info.PixelLength];
+                info.WavelengthStart = Math.Floor(info.Wavelength[info.StartPixel]);
+                info.WavelengthEnd = Math.Floor(info.Wavelength[info.StartPixel + info.PixelLength]);
 
                 info.WavelengthCorrection = new double[info.PixelLength];
 
-                for (int i = 0; i < info.PixelLength; i++)
+                for (int i = 0; i < 400; i++)
                 {
                     info.WavelengthCorrection[i] = Convert.ToDouble(Values[55 + i]);
                 }
@@ -837,6 +683,173 @@ namespace FI.PlateReader.Gen4.JETI
             return true;
 
         }
+        public bool WriteData()
+        {
+            // Connect to Versa
+            //bool state = Connect();
+            bool state = false;
+            // Try to download the data
+            //if (state)
+            //{
+                // Download data from EEPROM 
+                state = UploadData();
+                //Disconnect();
+            //}
+
+            // Check if download was sucessfull
+            if (state)
+            {
+                return true;
+            }
+            else
+            {
+                //DefaultValues();
+                return false;
+            }
+
+        }
+
+        public bool UploadData()
+        {
+            // From string to byte array
+            byte[] uData = new byte[1792];
+
+            // if name is longer than 10 characters, truncate to fixed 10 characters
+            if (info.InstrumentName.Length > 10) { info.InstrumentName = info.InstrumentName.Substring(0, 10); }
+            byte[] name = Encoding.ASCII.GetBytes(info.InstrumentName);
+            name.CopyTo(uData, 0);
+
+            byte[] sn = BitConverter.GetBytes(info.InstrumentSerialNumber);
+            sn.CopyTo(uData, 10);
+
+            byte[] ledSN = BitConverter.GetBytes(info.LEDSerialNumber);
+            ledSN.CopyTo(uData, 14);
+
+            byte[] specSN = BitConverter.GetBytes(info.SpectrometerSerialNumber);
+            specSN.CopyTo(uData, 18);
+
+            byte[] roffset = BitConverter.GetBytes((float)info.RowOffset);
+            roffset.CopyTo(uData, 22);
+
+            byte[] coffset = BitConverter.GetBytes((float)info.ColumnOffset);
+            coffset.CopyTo(uData, 26);
+
+            byte[] reject = BitConverter.GetBytes((float)info.RowEject);
+            reject.CopyTo(uData, 30);
+
+            byte[] ceject = BitConverter.GetBytes((float)info.ColumnEject);
+            ceject.CopyTo(uData, 34);
+
+            byte[] rdir = BitConverter.GetBytes(info.RowDirection);
+            rdir.CopyTo(uData, 38);
+
+            byte[] cdir = BitConverter.GetBytes(info.ColumnDirection);
+            cdir.CopyTo(uData, 42);
+
+            byte[] ledPulse = BitConverter.GetBytes(info.LEDPulse);
+            ledPulse.CopyTo(uData, 46);
+
+            byte[] ledWL = BitConverter.GetBytes(info.LEDWavelength);
+            ledWL.CopyTo(uData, 50);
+
+            byte[] ledMax = BitConverter.GetBytes(info.MaxCurrent);
+            ledMax.CopyTo(uData, 54);
+
+            byte[] instGain = BitConverter.GetBytes((float)info.SpectrometerGain);
+            instGain.CopyTo(uData, 58);
+
+            byte[] pixels = BitConverter.GetBytes(info.NPixel);
+            pixels.CopyTo(uData, 62);
+
+            byte[] p0 = BitConverter.GetBytes((float)info.P0);
+            p0.CopyTo(uData, 66);
+
+            byte[] p1 = BitConverter.GetBytes((float)info.P1);
+            p1.CopyTo(uData, 70);
+
+            byte[] p2 = BitConverter.GetBytes((float)info.P2);
+            p2.CopyTo(uData, 74);
+
+            byte[] p3 = BitConverter.GetBytes((float)info.P3);
+            p3.CopyTo(uData, 78);
+
+            byte[] p4 = BitConverter.GetBytes((float)info.P4);
+            p4.CopyTo(uData, 82);
+
+            byte[] cStart = BitConverter.GetBytes(info.StartPixel);
+            cStart.CopyTo(uData, 86);
+
+            byte[] cLength = BitConverter.GetBytes(info.PixelLength);
+            cLength.CopyTo(uData, 90);
+
+            for (int n = 0; n < 400; n++)
+            {
+                byte[] cValue = BitConverter.GetBytes((float)info.WavelengthCorrection[n]);
+                cValue.CopyTo(uData, 94 + (4 * n));
+            }
+
+            // Write row motor reverse
+            byte[] rowReverse = BitConverter.GetBytes(info.RowMotorReverse);
+            rowReverse.CopyTo(uData, 1742);
+
+            // Write row motor current
+            byte[] rowCurrent = BitConverter.GetBytes(info.RowCurrent);
+            rowCurrent.CopyTo(uData, 1746);
+
+            // Write row motor microstep
+            byte[] rowMicrostep = BitConverter.GetBytes(info.RowMicrostep);
+            rowMicrostep.CopyTo(uData, 1750);
+
+            // Read row motor units
+            byte[] rowUnits = BitConverter.GetBytes((float)info.RowUnitsPerRev);
+            rowUnits.CopyTo(uData, 1754);
+
+            // Write column motor reverse
+            byte[] columnReverse = BitConverter.GetBytes(info.ColumnMotorReverse);
+            columnReverse.CopyTo(uData, 1758);
+
+            // Write column motor current
+            byte[] columnCurrent = BitConverter.GetBytes(info.ColumnCurrent);
+            columnCurrent.CopyTo(uData, 1762);
+
+            // Write column motor microstep
+            byte[] columnMicrostep = BitConverter.GetBytes(info.ColumnMicrostep);
+            columnMicrostep.CopyTo(uData, 1766);
+
+            // Read column motor units
+            byte[] columnUnits = BitConverter.GetBytes((float)info.ColumnUnitsPerRev);
+            columnUnits.CopyTo(uData, 1770);
+
+            // Write row encoder direction
+            byte[] rowEncoderReverse = BitConverter.GetBytes(info.RowEncoderReverse);
+            rowReverse.CopyTo(uData, 1774);
+
+            // Write column encoder direction
+            byte[] columnEncoderReverse = BitConverter.GetBytes(info.ColumnEncoderReverse);
+            rowReverse.CopyTo(uData, 1778);
+
+
+            bool state = false;
+            unsafe
+            {
+                fixed (byte* dPointer = &uData[0])
+                {
+                    state = CheckError(Versa_uploadUserData(dPointer));
+                };
+            }
+
+            // Check Values
+            if (state)
+            {
+                return CheckValues();
+            }
+            else
+            {
+                return false;
+            }
+
+        }
+
 
         // Error Handling
         public bool CheckError(int value)

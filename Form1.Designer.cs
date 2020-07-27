@@ -64,6 +64,7 @@
             this.labelStatus = new System.Windows.Forms.ToolStripLabel();
             this.labelFixed = new System.Windows.Forms.ToolStripLabel();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            this.cboLEDState = new System.Windows.Forms.ToolStripComboBox();
             this.tabControl = new System.Windows.Forms.TabControl();
             this.tabAssayProtocol = new System.Windows.Forms.TabPage();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
@@ -213,11 +214,12 @@
             this.labelClock,
             this.labelStatus,
             this.labelFixed,
-            this.toolStripSeparator4});
+            this.toolStripSeparator4,
+            this.cboLEDState});
             this.toolStrip.Location = new System.Drawing.Point(0, 0);
             this.toolStrip.Name = "toolStrip";
             this.toolStrip.Padding = new System.Windows.Forms.Padding(0, 0, 3, 0);
-            this.toolStrip.Size = new System.Drawing.Size(1643, 27);
+            this.toolStrip.Size = new System.Drawing.Size(1643, 28);
             this.toolStrip.TabIndex = 4;
             this.toolStrip.Text = "toolStrip2";
             // 
@@ -226,7 +228,7 @@
             this.btnStart.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.btnStart.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnStart.Name = "btnStart";
-            this.btnStart.Size = new System.Drawing.Size(44, 24);
+            this.btnStart.Size = new System.Drawing.Size(44, 25);
             this.btnStart.Text = "Start";
             this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
             // 
@@ -235,7 +237,7 @@
             this.btnStop.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.btnStop.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnStop.Name = "btnStop";
-            this.btnStop.Size = new System.Drawing.Size(44, 24);
+            this.btnStop.Size = new System.Drawing.Size(44, 25);
             this.btnStop.Text = "Stop";
             this.btnStop.Click += new System.EventHandler(this.btnStop_Click);
             // 
@@ -244,7 +246,7 @@
             this.btnInsertPlate.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.btnInsertPlate.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnInsertPlate.Name = "btnInsertPlate";
-            this.btnInsertPlate.Size = new System.Drawing.Size(86, 24);
+            this.btnInsertPlate.Size = new System.Drawing.Size(86, 25);
             this.btnInsertPlate.Text = "Insert Plate";
             this.btnInsertPlate.Click += new System.EventHandler(this.btnInsertPlate_Click);
             // 
@@ -253,21 +255,21 @@
             this.btnEjectPlate.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.btnEjectPlate.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnEjectPlate.Name = "btnEjectPlate";
-            this.btnEjectPlate.Size = new System.Drawing.Size(82, 24);
+            this.btnEjectPlate.Size = new System.Drawing.Size(82, 25);
             this.btnEjectPlate.Text = "Eject Plate";
             this.btnEjectPlate.Click += new System.EventHandler(this.btnEjectPlate_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 27);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 28);
             // 
             // btnApplyProtocol
             // 
             this.btnApplyProtocol.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.btnApplyProtocol.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnApplyProtocol.Name = "btnApplyProtocol";
-            this.btnApplyProtocol.Size = new System.Drawing.Size(112, 24);
+            this.btnApplyProtocol.Size = new System.Drawing.Size(112, 25);
             this.btnApplyProtocol.Text = "Apply Protocol";
             this.btnApplyProtocol.Click += new System.EventHandler(this.btnApplyProtocol_Click);
             // 
@@ -276,7 +278,7 @@
             this.btnResetProtocol.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.btnResetProtocol.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnResetProtocol.Name = "btnResetProtocol";
-            this.btnResetProtocol.Size = new System.Drawing.Size(109, 24);
+            this.btnResetProtocol.Size = new System.Drawing.Size(109, 25);
             this.btnResetProtocol.Text = "Reset Protocol";
             this.btnResetProtocol.ToolTipText = "Reset Protocol";
             this.btnResetProtocol.Click += new System.EventHandler(this.btnResetProtocol_Click);
@@ -284,21 +286,21 @@
             // toolStripSeparator3
             // 
             this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 27);
+            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 28);
             // 
             // btnSaveData
             // 
             this.btnSaveData.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.btnSaveData.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnSaveData.Name = "btnSaveData";
-            this.btnSaveData.Size = new System.Drawing.Size(80, 24);
+            this.btnSaveData.Size = new System.Drawing.Size(80, 25);
             this.btnSaveData.Text = "Save Data";
             this.btnSaveData.Click += new System.EventHandler(this.btnSaveData_Click);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 27);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 28);
             // 
             // btnLoadConfig
             // 
@@ -306,26 +308,26 @@
             this.btnLoadConfig.Image = ((System.Drawing.Image)(resources.GetObject("btnLoadConfig.Image")));
             this.btnLoadConfig.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnLoadConfig.Name = "btnLoadConfig";
-            this.btnLoadConfig.Size = new System.Drawing.Size(94, 24);
+            this.btnLoadConfig.Size = new System.Drawing.Size(94, 25);
             this.btnLoadConfig.Text = "Load Config";
             this.btnLoadConfig.Click += new System.EventHandler(this.btnLoadConfig_Click);
             // 
             // toolStripSeparator10
             // 
             this.toolStripSeparator10.Name = "toolStripSeparator10";
-            this.toolStripSeparator10.Size = new System.Drawing.Size(6, 27);
+            this.toolStripSeparator10.Size = new System.Drawing.Size(6, 28);
             // 
             // labelClock
             // 
             this.labelClock.Name = "labelClock";
-            this.labelClock.Size = new System.Drawing.Size(85, 24);
+            this.labelClock.Size = new System.Drawing.Size(85, 25);
             this.labelClock.Text = "Clock Label";
             // 
             // labelStatus
             // 
             this.labelStatus.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
             this.labelStatus.Name = "labelStatus";
-            this.labelStatus.Size = new System.Drawing.Size(89, 24);
+            this.labelStatus.Size = new System.Drawing.Size(89, 25);
             this.labelStatus.Text = "Status Label";
             // 
             // labelFixed
@@ -333,13 +335,25 @@
             this.labelFixed.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
             this.labelFixed.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelFixed.Name = "labelFixed";
-            this.labelFixed.Size = new System.Drawing.Size(45, 24);
+            this.labelFixed.Size = new System.Drawing.Size(45, 25);
             this.labelFixed.Text = "Task:";
             // 
             // toolStripSeparator4
             // 
             this.toolStripSeparator4.Name = "toolStripSeparator4";
-            this.toolStripSeparator4.Size = new System.Drawing.Size(6, 27);
+            this.toolStripSeparator4.Size = new System.Drawing.Size(6, 28);
+            // 
+            // cboLEDState
+            // 
+            this.cboLEDState.Items.AddRange(new object[] {
+            "Idle",
+            "Scan",
+            "Error",
+            "Off"});
+            this.cboLEDState.Name = "cboLEDState";
+            this.cboLEDState.Size = new System.Drawing.Size(121, 28);
+            this.cboLEDState.SelectedIndexChanged += new System.EventHandler(this.cboLEDState_SelectedIndexChanged);
+            this.cboLEDState.Click += new System.EventHandler(this.cboLEDState_Click);
             // 
             // tabControl
             // 
@@ -531,6 +545,11 @@
             // 
             this.nudScans.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.nudScans.Location = new System.Drawing.Point(229, 78);
+            this.nudScans.Maximum = new decimal(new int[] {
+            500,
+            0,
+            0,
+            0});
             this.nudScans.Minimum = new decimal(new int[] {
             1,
             0,
@@ -1754,6 +1773,7 @@
         private System.Windows.Forms.Label label20;
         private System.Windows.Forms.ComboBox cboThermalSelection;
         private System.Windows.Forms.DataVisualization.Charting.Chart chartThermalMap;
+        private System.Windows.Forms.ToolStripComboBox cboLEDState;
     }
 }
 

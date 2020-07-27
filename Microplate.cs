@@ -129,7 +129,7 @@ namespace FI.PlateReader.Gen4.JETI
 
                 // Add info to Class
                 MotorList[i].RowReference = rowPosition[0];     //info.RowOffset;
-                MotorList[i].ColumnReference = columnPosition[0] - info.ColumnDirection*(PlateList[i].ColumnSpacing);   // info.ColumnOffset;
+                MotorList[i].ColumnReference = columnPosition[0];   // - info.ColumnDirection*(PlateList[i].ColumnSpacing);   // info.ColumnOffset;
 
                 MotorList[i].RowPosition = rowPosition;
                 MotorList[i].ColumnPosition = columnPosition;
